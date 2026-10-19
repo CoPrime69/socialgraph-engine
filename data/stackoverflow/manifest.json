@@ -1,0 +1,98 @@
+{
+  "dataset": "stackoverflow-2008",
+  "license": "CC BY-SA 4.0",
+  "attribution": "Stack Exchange, Inc. and Stack Overflow contributors — Stack Exchange Data Dump",
+  "source": {
+    "posts": "s3://datasets-documentation/stackoverflow/parquet/posts/2008.parquet (region eu-west-3, anonymous)",
+    "comments": "s3://datasets-documentation/stackoverflow/parquet/comments/2008.parquet (region eu-west-3, anonymous)",
+    "users": "s3://datasets-documentation/stackoverflow/parquet/users.parquet (region eu-west-3, anonymous)",
+    "badges": "s3://datasets-documentation/stackoverflow/parquet/badges.parquet (region eu-west-3, anonymous)"
+  },
+  "builder": "tools/dataset/build_stackoverflow_dataset.py",
+  "files": [
+    {
+      "file": "categories.csv.gz",
+      "rows": 10,
+      "bytes_uncompressed": 807,
+      "bytes": 496,
+      "sha256": "d3aaaaf665739e56d09e8f424c7219fb06cef0a496195edd3c4f350f098a3bbc"
+    },
+    {
+      "file": "branches.csv.gz",
+      "rows": 73,
+      "bytes_uncompressed": 1063,
+      "bytes": 488,
+      "sha256": "52fa6a2d4b76c21efd1d7336ab0d97c5de1840ccb79c5b9e3ff1ed00bf2eb5a3"
+    },
+    {
+      "file": "users.csv.gz",
+      "rows": 18648,
+      "bytes_uncompressed": 3913926,
+      "bytes": 1541564,
+      "sha256": "481e2a0587e1d448e6c71f266747195541373b7d4e7f45c9ba3202d67a713641"
+    },
+    {
+      "file": "connections.csv.gz",
+      "rows": 204650,
+      "bytes_uncompressed": 12481105,
+      "bytes": 3069092,
+      "sha256": "21d0d3a113aee4bc43271630ca3845103def40cd75a9d91511f607db5b5c9ccd"
+    },
+    {
+      "file": "tags.csv.gz",
+      "rows": 9890,
+      "bytes_uncompressed": 143319,
+      "bytes": 51372,
+      "sha256": "cff046b783b9b965ef7c400e347fe253eeb90822fb4990fd8a4f2970e07e4b33"
+    },
+    {
+      "file": "questions.csv.gz",
+      "rows": 57376,
+      "bytes_uncompressed": 7636900,
+      "bytes": 3025019,
+      "sha256": "f60a69f91760f6afa60a9037854aac4f4f4b1c8a7a68a5b744e4e34b1cfab0df"
+    },
+    {
+      "file": "answers.csv.gz",
+      "rows": 208230,
+      "bytes_uncompressed": 10376158,
+      "bytes": 2607845,
+      "sha256": "9b90a8d7ac9d61225134767f71bca6a5c0e9d82cceba3a887f356f2e71c0a85e"
+    },
+    {
+      "file": "comments.csv.gz",
+      "rows": 117417,
+      "bytes_uncompressed": 22502122,
+      "bytes": 8833684,
+      "sha256": "e451fd6a98e23369f18ac733d8d3c3cf20b24f02925b739baa6bca1c45ac864a"
+    },
+    {
+      "file": "badges.csv.gz",
+      "rows": 211627,
+      "bytes_uncompressed": 11094430,
+      "bytes": 1852468,
+      "sha256": "cb98f65546b9a1ba36eb7f13ec74217024cb31e6655b8e781c8fd4fe9f53f47c"
+    },
+    {
+      "file": "user_tags.csv.gz",
+      "rows": 437229,
+      "bytes_uncompressed": 8546213,
+      "bytes": 2372519,
+      "sha256": "71c3531c490e9185c0770f7436553193d919ee92f04a1d8f2ad8f49b170fcd75"
+    }
+  ],
+  "summary": {
+    "categories": 10,
+    "branches": 73,
+    "users": 18648,
+    "connections": 204650,
+    "tags": 9890,
+    "questions": 57376,
+    "answers": 208230,
+    "comments": 117417,
+    "badges": 211627,
+    "user_tags": 437229
+  },
+  "total_bytes_uncompressed": 76696043,
+  "total_bytes": 23354547
+}
