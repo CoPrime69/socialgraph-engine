@@ -1,0 +1,4 @@
+id,question_id,owner_id,created_at,score,comment_count,is_accepted
+101,1,10,2008-08-05T11:00:00Z,25,1,true
+102,1,,2008-08-05T12:00:00Z,-2,0,false
+201,2,20,2008-09-01T12:00:00Z,3,0,false

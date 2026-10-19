@@ -120,14 +120,14 @@ All responses include `"graph_version"` (the last graph event applied). Every en
 `min_version=N`: the service waits up to 2 s for the read model to reach version N (read-your-writes
 after a mutation) and otherwise answers with what it has plus header `X-Graph-Stale: true`.
 
-`UserRef` = `{ "id", "handle", "name", "category", "branch" }`
+`UserRef` = `{ "id", "handle", "name", "category", "branch", "reputation" }`
 
 | Method & path | Response |
 |---------------|----------|
 | `GET /api/v1/analytics/summary` | `{ graph_version, users, connections, density, average_degree, components, largest_component, communities, modularity, computed_at, compute_ms }` |
 | `GET /api/v1/analytics/influencers?metric=pagerank\|betweenness\|closeness\|degree&limit=10` | `{ graph_version, metric, items: [ { rank, user: UserRef, score } ] }` |
 | `GET /api/v1/analytics/communities` | `{ graph_version, modularity, items: [ { id, size, dominant_category, dominant_branch, members: [UserRef] } ] }` sorted by size desc |
-| `GET /api/v1/analytics/graph` | `{ graph_version, nodes: [ { id, handle, name, category, branch, community, pagerank, degree } ], edges: [ { source, target, strength } ] }` |
+| `GET /api/v1/analytics/graph?limit=1500[&focus=ID&depth=1\|2]` | `{ graph_version, total_nodes, total_edges, nodes: [ { id, handle, name, category, branch, reputation, community, pagerank, degree } ], edges: [ { source, target, strength } ] }` — top `limit` users by PageRank (default 1500, max 100000), or the ego network of `focus` up to `depth` hops (most influential first, capped by `limit`); edges are those induced by the returned nodes |
 | `GET /api/v1/analytics/graph.dot` | Graphviz DOT text (`text/vnd.graphviz`), nodes coloured by community |
 | `GET /api/v1/me/recommendations?limit=10` | `{ graph_version, items: [ { user: UserRef, score, mutual_connections, reasons: { adamic_adar, affinity, same_category, same_branch, same_community } } ] }` |
 | `GET /api/v1/paths?to=ID[&from=ID]` (`from` defaults to caller) | `{ graph_version, found, degrees, path: [UserRef] }` (`degrees` = edges on the path, `null` if not found) |
