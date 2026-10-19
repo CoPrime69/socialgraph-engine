@@ -134,6 +134,22 @@ TEST_F(PgTest, AutocommitReadsRetryOnABrokenConnection) {
             1);
 }
 
+TEST_F(PgTest, VacuumAfterImportKeepsTheSessionTimeout) {
+  PgPool pool(options(1));
+  pool.with_transaction([](pqxx::work& tx) { tx.exec("CREATE TABLE imported (id integer)"); });
+  const auto before = pool.with_read(
+      [](pqxx::nontransaction& tx) { return tx.query_value<std::string>("SELECT current_setting('statement_timeout')"); });
+  vacuum_analyze(pool, "imported");
+  vacuum_analyze(pool, "does_not_exist");  // logged, not thrown
+  EXPECT_EQ(pool.with_read([](pqxx::nontransaction& tx) {
+              return tx.query_value<std::string>("SELECT current_setting('statement_timeout')");
+            }),
+            before);
+  EXPECT_TRUE(pool.with_read([](pqxx::nontransaction& tx) {
+    return tx.query_value<bool>("SELECT last_vacuum IS NOT NULL FROM pg_stat_user_tables WHERE relname = 'imported'");
+  }));
+}
+
 TEST_F(PgTest, UnreachableDatabaseIs503) {
   PgPoolOptions o;
   o.conninfo = "postgresql://nobody:nothing@127.0.0.1:1/none";

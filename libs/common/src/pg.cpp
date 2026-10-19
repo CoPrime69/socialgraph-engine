@@ -225,6 +225,26 @@ void run_migrations(PgPool& pool, std::span<const Migration> migrations, std::in
   }
 }
 
+void vacuum_analyze(PgPool& pool, const std::string& tables) {
+  try {
+    pool.with_read([&](pqxx::nontransaction& tx) {
+      // VACUUM cannot run in a transaction block; lift the pooled session's statement timeout for
+      // it and put the previous value back afterwards.
+      const auto previous = tx.query_value<std::string>("SELECT current_setting('statement_timeout')");
+      tx.exec("SET statement_timeout = 0");
+      try {
+        tx.exec("VACUUM (ANALYZE) " + tables);
+      } catch (...) {
+        tx.exec_params("SELECT set_config('statement_timeout', $1, false)", previous);
+        throw;
+      }
+      tx.exec_params("SELECT set_config('statement_timeout', $1, false)", previous);
+    });
+  } catch (const std::exception& e) {
+    log_warn("vacuum after import failed", {{"tables", tables}, {"error", e.what()}});
+  }
+}
+
 bool is_connection_error(const std::exception& e) noexcept {
   if (dynamic_cast<const pqxx::broken_connection*>(&e) != nullptr ||
       dynamic_cast<const pqxx::in_doubt_error*>(&e) != nullptr) {

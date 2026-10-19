@@ -188,6 +188,11 @@ SeedReport load_seed_if_empty(sg::common::PgPool& pool, const std::filesystem::p
     tx.exec("ANALYZE");
     report.loaded = true;
   });
+  if (report.loaded) {
+    // Outside the import transaction (VACUUM cannot run inside one): sets the visibility map so
+    // index-only scans skip the heap from the first request on.
+    sg::common::vacuum_analyze(pool, "questions, question_tags, answers, comments, badges, user_tags, tags, user_activity");
+  }
   report.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
   return report;
 }

@@ -393,6 +393,9 @@ SeedReport seed_dataset_if_empty(sg::common::PgPool& pool, const std::filesystem
     r.branches = taxonomy.branches.size();
     return r;
   });
+  // VACUUM cannot run inside a transaction. It sets the visibility map so index-only scans skip the
+  // heap right away, instead of after autovacuum gets round to the freshly imported tables.
+  sg::common::vacuum_analyze(pool, "profiles, connections");
   report.seconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
   return report;

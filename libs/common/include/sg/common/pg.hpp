@@ -181,6 +181,10 @@ auto PgPool::with_read(F&& f) {
 ///         (the history was rewritten), or when a migration fails (its transaction is rolled back).
 void run_migrations(PgPool& pool, std::span<const Migration> migrations, std::int64_t advisory_lock_key);
 
+/// VACUUM (ANALYZE) of `tables` (a comma-separated list of trusted identifiers) after a bulk load,
+/// with no statement timeout. Best effort: a failure is logged, not thrown.
+void vacuum_analyze(PgPool& pool, const std::string& tables);
+
 /// True when `e` (or its cause) means the database is unreachable rather than a query failing.
 [[nodiscard]] bool is_connection_error(const std::exception& e) noexcept;
 

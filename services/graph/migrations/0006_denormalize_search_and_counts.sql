@@ -16,8 +16,11 @@ ALTER TABLE profiles
 
 DROP INDEX profiles_handle_trgm_idx;
 DROP INDEX profiles_name_trgm_idx;
-CREATE INDEX profiles_handle_lower_trgm_idx ON profiles USING gin (handle_lower gin_trgm_ops);
-CREATE INDEX profiles_name_lower_trgm_idx ON profiles USING gin (name_lower gin_trgm_ops);
+-- fastupdate off: the import inserts every profile at once, and GIN's pending list would hold them
+-- all until the next VACUUM, making index scans slow enough that the planner fell back to
+-- sequential scans (6 ms instead of 0.55 ms per search on the full dataset).
+CREATE INDEX profiles_handle_lower_trgm_idx ON profiles USING gin (handle_lower gin_trgm_ops) WITH (fastupdate = off);
+CREATE INDEX profiles_name_lower_trgm_idx ON profiles USING gin (name_lower gin_trgm_ops) WITH (fastupdate = off);
 
 UPDATE profiles p SET connection_count = c.n
 FROM (SELECT u, count(*) AS n FROM (SELECT user_a AS u FROM connections UNION ALL SELECT user_b FROM connections) e
