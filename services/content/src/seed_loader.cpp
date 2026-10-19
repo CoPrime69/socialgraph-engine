@@ -181,6 +181,7 @@ SeedReport load_seed_if_empty(sg::common::PgPool& pool, const std::filesystem::p
     tx.exec(
         "UPDATE questions q SET accepted_answer_id = NULL WHERE accepted_answer_id IS NOT NULL "
         "AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.id = q.accepted_answer_id)");
+    tx.exec("SELECT rebuild_user_activity()");
     tx.exec("ANALYZE");
     report.loaded = true;
   });

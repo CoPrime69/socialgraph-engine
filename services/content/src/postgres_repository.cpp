@@ -60,17 +60,15 @@ Activity PostgresContentRepository::activity(std::int64_t user_id) {
   return pool_.with_transaction([&](pqxx::work& tx) {
     Activity a;
     a.user_id = user_id;
-    const auto totals = tx.exec_params1(
-        "SELECT (SELECT count(*) FROM questions WHERE owner_id = $1),"
-        "       (SELECT coalesce(sum(score), 0) FROM questions WHERE owner_id = $1),"
-        "       (SELECT count(*) FROM answers WHERE owner_id = $1),"
-        "       (SELECT count(*) FROM answers WHERE owner_id = $1 AND is_accepted),"
-        "       (SELECT coalesce(sum(score), 0) FROM answers WHERE owner_id = $1),"
-        "       (SELECT count(*) FROM comments WHERE user_id = $1),"
-        "       count(*) FILTER (WHERE class = 1), count(*) FILTER (WHERE class = 2),"
-        "       count(*) FILTER (WHERE class = 3) "
-        "FROM badges WHERE user_id = $1",
+    // Precomputed at import (migration 0002); members without any content have no row.
+    const auto rows = tx.exec_params(
+        "SELECT questions, question_score, answers, accepted_answers, answer_score, comments, gold, silver, bronze "
+        "FROM user_activity WHERE user_id = $1",
         user_id);
+    if (rows.empty()) {
+      return a;
+    }
+    const auto& totals = rows[0];
     a.totals.questions = totals[0].as<std::int64_t>();
     a.totals.question_score = totals[1].as<std::int64_t>();
     a.totals.answers = totals[2].as<std::int64_t>();
