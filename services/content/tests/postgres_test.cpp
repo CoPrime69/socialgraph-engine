@@ -2,39 +2,38 @@
 #include "seed_loader.hpp"
 
 #include <sg/common/pg.hpp>
+#include <sg/common/testing/test_env.hpp>
 
 #include <gtest/gtest.h>
 
-#include <cstdlib>
+#include <memory>
 
 namespace sg::content {
 std::span<const sg::common::Migration> embedded_migrations();
 
 namespace {
 
-// Runs against a real PostgreSQL (SG_TEST_DATABASE_URL); each test gets a fresh schema.
+// Runs against a real PostgreSQL (SG_TEST_DATABASE_URL); each test gets its own throw-away
+// database, so the suite can run in parallel with itself and with other suites.
 class ContentPostgresTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    const char* url = std::getenv("SG_TEST_DATABASE_URL");
-    if (url == nullptr || *url == '\0') GTEST_SKIP() << "SG_TEST_DATABASE_URL not set";
+    const auto url = sg::common::testing::test_database_url();
+    if (!url) GTEST_SKIP() << "SG_TEST_DATABASE_URL not set";
+    database_ = std::make_unique<sg::common::testing::TempDatabase>(*url, "sg_content_test");
     sg::common::PgPoolOptions options;
-    options.conninfo = std::string(url) + (std::string(url).find('?') == std::string::npos ? "?" : "&") +
-                       "options=-csearch_path%3Dcontent_test";
+    options.conninfo = database_->url();
     options.size = 4;
-    {
-      sg::common::PgPoolOptions admin = options;
-      admin.conninfo = url;
-      sg::common::PgPool admin_pool(admin);
-      admin_pool.with_transaction([](pqxx::work& tx) {
-        tx.exec("DROP SCHEMA IF EXISTS content_test CASCADE");
-        tx.exec("CREATE SCHEMA content_test");
-      });
-    }
     pool_ = std::make_unique<sg::common::PgPool>(options);
     sg::common::run_migrations(*pool_, embedded_migrations(), 4242);
   }
 
+  void TearDown() override {
+    pool_.reset();  // close connections before the database is dropped
+    database_.reset();
+  }
+
+  std::unique_ptr<sg::common::testing::TempDatabase> database_;
   std::unique_ptr<sg::common::PgPool> pool_;
 };
 

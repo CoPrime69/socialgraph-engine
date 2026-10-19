@@ -14,7 +14,7 @@ install(TARGETS content-service RUNTIME DESTINATION bin)
 
 if(SG_BUILD_TESTS)
   add_executable(content_tests tests/api_test.cpp tests/postgres_test.cpp)
-  target_link_libraries(content_tests PRIVATE sg_content_lib GTest::gtest_main)
+  target_link_libraries(content_tests PRIVATE sg_content_lib sg::common_testing GTest::gtest_main)
   target_compile_definitions(content_tests PRIVATE
     SG_CONTENT_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
   sg_set_warnings(content_tests)
