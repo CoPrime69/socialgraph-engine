@@ -94,15 +94,14 @@ SeedReport load_seed_if_empty(sg::common::PgPool& pool, const std::filesystem::p
     {
       auto q = pqxx::stream_to::raw_table(tx, "questions",
                                           "id, owner_id, created_at, title, score, view_count, answer_count, "
-                                          "comment_count, favorite_count, accepted_answer_id, closed_at");
+                                          "comment_count, favorite_count, accepted_answer_id, closed_at, tag_names");
       std::vector<std::array<std::string, 5>> links;  // question_id, tag_id, position, score, created_at
       each(directory, "questions",
            {"id", "owner_id", "created_at", "title", "tags", "score", "view_count", "answer_count", "comment_count",
             "favorite_count", "accepted_answer_id", "closed_at"},
            [&](std::vector<std::string>& f) {
              questions.insert(std::stoll(f[0]));
-             q.write_row(Row{f[0], nullable(f[1]), f[2], f[3], f[5], f[6], f[7], f[8], f[9], nullable(f[10]),
-                             nullable(f[11])});
+             std::string names;  // the known tags, in order (unknown ones are not linked either)
              std::size_t position = 0;
              std::size_t start = 0;
              while (start < f[4].size()) {
@@ -111,9 +110,13 @@ SeedReport load_seed_if_empty(sg::common::PgPool& pool, const std::filesystem::p
                const auto tag = f[4].substr(start, end - start);
                if (auto it = tag_ids.find(tag); it != tag_ids.end()) {
                  links.push_back({f[0], std::to_string(it->second), std::to_string(position++), f[5], f[2]});
+                 if (!names.empty()) names += ' ';
+                 names += tag;
                }
                start = end + 1;
              }
+             q.write_row(Row{f[0], nullable(f[1]), f[2], f[3], f[5], f[6], f[7], f[8], f[9], nullable(f[10]),
+                             nullable(f[11]), names});
            });
       q.complete();
       report.questions = static_cast<std::int64_t>(questions.size());

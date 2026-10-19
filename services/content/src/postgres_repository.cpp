@@ -9,9 +9,8 @@ namespace {
 // Formats a timestamptz column as RFC 3339 UTC in SQL so C++ never parses dates.
 #define SG_RFC3339(col) "to_char(" col " AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')"
 
-constexpr const char* kQuestionTags =
-    "(SELECT coalesce(string_agg(t.name, ' ' ORDER BY qt.position), '') FROM question_tags qt "
-    "JOIN tags t ON t.id = qt.tag_id WHERE qt.question_id = q.id)";
+// Space-separated tag names in position order, stored at import (migration 0004).
+constexpr const char* kQuestionTags = "q.tag_names";
 
 std::optional<AuthorRef> author(const pqxx::row& row, int id_col, int name_col) {
   if (row[id_col].is_null()) return std::nullopt;
