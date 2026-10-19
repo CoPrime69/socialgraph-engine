@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # HTTP load test of the running stack with wrk.
-#   BASE_URL=http://localhost:8080 HANDLE=user1 PASSWORD=... tools/loadtest/run.sh
+#   BASE_URL=http://localhost:8080 HANDLE=demo PASSWORD=... tools/loadtest/run.sh
 # Optional: DURATION (default 20s), THREADS (4), CONNECTIONS (32).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 BASE_URL=${BASE_URL:-http://localhost:8080}
-HANDLE=${HANDLE:-user1}
+HANDLE=${HANDLE:-demo}
 DURATION=${DURATION:-20s}
 THREADS=${THREADS:-4}
 CONNECTIONS=${CONNECTIONS:-32}
@@ -20,10 +20,13 @@ endpoints=(
   "/api/v1/analytics/summary"
   "/api/v1/analytics/influencers?metric=pagerank&limit=10"
   "/api/v1/me/recommendations?limit=10"
-  "/api/v1/paths?to=57"
-  "/api/v1/analytics/graph"
+  "/api/v1/paths?to=1"
+  "/api/v1/analytics/graph?limit=1500"
   "/api/v1/me/connections"
-  "/api/v1/users?q=user&limit=20"
+  "/api/v1/users?q=jon&limit=20"
+  "/api/v1/users/1/activity"
+  "/api/v1/questions?tag=c%23&limit=20"
+  "/api/v1/questions?q=regular%20expression&limit=20"
 )
 echo "# wrk -t$THREADS -c$CONNECTIONS -d$DURATION against $BASE_URL"
 for path in "${endpoints[@]}"; do
