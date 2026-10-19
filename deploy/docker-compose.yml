@@ -86,6 +86,8 @@ services:
     <<: *service-defaults
     build: { <<: *cpp-build, target: analytics-service }
     image: socialgraph/analytics-service:local
+    # Each replica keeps its own copy of the read model from the event stream, so reads scale out.
+    deploy: { replicas: "${ANALYTICS_REPLICAS:-1}" }
     environment:
       <<: *common-env
       ANALYTICS_PORT: "8083"
@@ -99,6 +101,7 @@ services:
     <<: *service-defaults
     build: { <<: *cpp-build, target: content-service }
     image: socialgraph/content-service:local
+    deploy: { replicas: "${CONTENT_REPLICAS:-1}" }
     environment:
       <<: *common-env
       CONTENT_PORT: "8084"
