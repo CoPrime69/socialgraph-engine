@@ -1,0 +1,22 @@
+# C++ builds
+/build/
+/build-*/
+/out/
+*.o
+*.exe
+compile_commands.json
+# Node
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+# Env and secrets
+.env
+deploy/.env
+*.pem
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
