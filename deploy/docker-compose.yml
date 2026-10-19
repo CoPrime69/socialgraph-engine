@@ -14,7 +14,8 @@ x-service-defaults: &service-defaults
     LOG_LEVEL: ${LOG_LEVEL:-info}
     REDIS_HOST: redis
     REDIS_PORT: "6379"
-    HTTP_THREADS: ${HTTP_THREADS:-8}
+    HTTP_THREADS: ${HTTP_THREADS:-0}               # HTTP event loops; 0 = one per CPU core
+    HTTP_WORKER_THREADS: ${HTTP_WORKER_THREADS:-32}  # threads running request handlers
 
 services:
   postgres:

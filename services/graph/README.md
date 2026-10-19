@@ -86,7 +86,9 @@ dataset (18,648 users, 204,650 connections) imports in about 5 s (5.1 s RelWithD
 | `SEED_ON_EMPTY` | `true` | |
 | `SEED_DIR` | `data/stackoverflow` | images mount the dataset at `/data/stackoverflow` |
 | `CONSUMER_NAME` | host name | unique per replica |
-| `HTTP_THREADS` / `DB_POOL_SIZE` | `8` / `8` | |
+| `HTTP_THREADS` | `0` | HTTP event-loop threads; `0` = one per CPU core |
+| `HTTP_WORKER_THREADS` | `32` | threads running request handlers (they wait on PostgreSQL) |
+| `DB_POOL_SIZE` | `8` | |
 | `LOG_LEVEL` | `info` | |
 
 Subcommands: `serve` (default), `migrate`, `seed`, `healthcheck`, `--help`. The migrations create

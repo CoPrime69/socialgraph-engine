@@ -253,18 +253,18 @@ TEST(RequireAuth, ParsesBearerHeader) {
   const TokenVerifier verifier(keys.public_key_b64);
   const std::string token = issuer.issue(5, "eve", "Eve").token;
 
-  httplib::Request req;
+  Request req;
   EXPECT_THROW((void)require_auth(req, verifier), ApiError);
   req.set_header("Authorization", "Bearer " + token);
   EXPECT_EQ(require_auth(req, verifier).user_id, 5);
 
-  httplib::Request lower;
+  Request lower;
   lower.set_header("Authorization", "bearer " + token);
   EXPECT_EQ(require_auth(lower, verifier).user_id, 5);
 
   for (const std::string& value : {"Basic " + token, std::string("Bearer"), std::string("Bearer "), token,
                                    "Bearer " + token + "x"}) {
-    httplib::Request bad;
+    Request bad;
     bad.set_header("Authorization", value);
     try {
       (void)require_auth(bad, verifier);

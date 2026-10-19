@@ -53,7 +53,8 @@ Environment:
   TAXONOMY_REFRESH_SECONDS    taxonomy refresh period (default 300)
   SEED_ON_EMPTY               create the demo account when the database is empty (default true)
   SEED_DEMO_PASSWORD          password of the demo account (8-128 bytes; secret)
-  HTTP_THREADS                request worker threads (default 8)
+  HTTP_THREADS                HTTP event-loop threads (default 0 = one per CPU core)
+  HTTP_WORKER_THREADS         threads running request handlers (default 32)
   DB_POOL_SIZE                PostgreSQL connections (default 8)
   RATE_LIMIT_WINDOW_SECONDS   rate limit window (default 60)
   LOGIN_RATE_LIMIT_PER_IP     login attempts per client and window (default 30, 0 = off)
@@ -121,6 +122,7 @@ int serve(const Config& config) {
   common::HttpServerOptions options;
   options.port = config.port;
   options.threads = config.http_threads;
+  options.worker_threads = config.http_worker_threads;  // handlers query PostgreSQL and hash passwords
   common::HttpServer server("identity-service", options);
   sg::identity::http::register_routes(server, accounts, verifier, limits);
   server.set_readiness_check([&pool] { return pool.ping(); });

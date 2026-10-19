@@ -32,7 +32,8 @@ Environment:
   CONTENT_DATABASE_URL    PostgreSQL connection URI (required for serve/migrate/seed)
   AUTH_PUBLIC_KEY         identity Ed25519 public key, base64 (required for serve)
   DB_POOL_SIZE            connections in the pool (default 8)
-  HTTP_THREADS            request worker threads (default 8)
+  HTTP_THREADS            HTTP event-loop threads (default 0 = one per CPU core)
+  HTTP_WORKER_THREADS     threads running request handlers (default 32)
   SEED_ON_EMPTY           import SEED_DIR when the database is empty (default false)
   SEED_DIR                dataset directory (default data/stackoverflow)
   CONTENT_CACHE_ENTRIES   rendered responses kept in memory (default 50000, 0 disables)
@@ -80,7 +81,9 @@ int serve() {
   sg::content::PostgresContentRepository repository(pool);
   common::HttpServerOptions options;
   options.port = port();
-  options.threads = static_cast<std::size_t>(common::env_int("HTTP_THREADS", 8, 1, 512));
+  options.threads = static_cast<std::size_t>(common::env_int("HTTP_THREADS", 0, 0, 512));
+  // Cache misses query PostgreSQL, so handlers run on the worker pool.
+  options.worker_threads = static_cast<std::size_t>(common::env_int("HTTP_WORKER_THREADS", 32, 1, 1024));
   common::HttpServer server("content-service", options);
   sg::content::ApiOptions api_options;
   api_options.cache_entries =

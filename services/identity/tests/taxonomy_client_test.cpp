@@ -27,7 +27,7 @@ const json kTaxonomy = json::parse(R"({"categories":["Web Development","Database
 class FakeGraphService {
  public:
   FakeGraphService() : server_("fake-graph", sg::common::HttpServerOptions{}) {
-    server_.get("/api/v1/meta/taxonomy", [this](const httplib::Request&, httplib::Response& res) {
+    server_.get("/api/v1/meta/taxonomy", [this](const sg::common::Request&, sg::common::Response& res) {
       requests_.fetch_add(1);
       std::lock_guard lock(mutex_);
       sg::common::write_json(res, status_, body_);

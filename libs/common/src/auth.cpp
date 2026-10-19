@@ -267,7 +267,7 @@ TokenVerifier::Verified TokenVerifier::verify_signature_and_claims(std::string_v
   return {std::move(claims), not_before};
 }
 
-Claims require_auth(const httplib::Request& req, const TokenVerifier& verifier) {
+Claims require_auth(const Request& req, const TokenVerifier& verifier) {
   if (!req.has_header("Authorization")) {
     throw unauthenticated();
   }

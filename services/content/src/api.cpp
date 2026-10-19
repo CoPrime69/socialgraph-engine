@@ -13,6 +13,8 @@ namespace sg::content {
 namespace {
 
 using nlohmann::json;
+using sg::common::Request;
+using sg::common::Response;
 using sg::common::query_int;
 using sg::common::query_param;
 
@@ -34,7 +36,7 @@ json page_json(const Page<T>& page, F&& item) {
 }
 
 // Optional free-text query parameter: trimmed, non-empty, bounded, no control characters.
-std::optional<std::string> text_param(const httplib::Request& req, const std::string& name) {
+std::optional<std::string> text_param(const Request& req, const std::string& name) {
   auto value = query_param(req, name);
   if (!value) return std::nullopt;
   auto first = value->find_first_not_of(" \t");
@@ -59,7 +61,7 @@ using ResponseCache = sg::common::LruCache<std::string, std::shared_ptr<const Re
 // Cache-aside over rendered JSON: a hit skips PostgreSQL and serialization entirely. The strong
 // ETag is derived from the body, so clients revalidating an unchanged response get 304.
 template <class Render>
-void cached_json(const httplib::Request& req, httplib::Response& res, ResponseCache* cache, const std::string& key,
+void cached_json(const Request& req, Response& res, ResponseCache* cache, const std::string& key,
                  Render&& render) {
   auto make = [&] {
     auto body = render().dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
@@ -78,7 +80,7 @@ void cached_json(const httplib::Request& req, httplib::Response& res, ResponseCa
 
 template <class Body>
 sg::common::Handler authenticated(const sg::common::TokenVerifier& verifier, Body body) {
-  return [&verifier, body](const httplib::Request& req, httplib::Response& res) {
+  return [&verifier, body](const Request& req, Response& res) {
     (void)sg::common::require_auth(req, verifier);
     body(req, res);
   };

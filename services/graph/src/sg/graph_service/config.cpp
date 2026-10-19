@@ -20,7 +20,8 @@ Config Config::from_env() {
   c.public_key_b64 = env_get("AUTH_PUBLIC_KEY");
   c.redis.host = env_or("REDIS_HOST", "127.0.0.1");
   c.redis.port = static_cast<int>(env_int("REDIS_PORT", 6379, 1, 65535));
-  c.http_threads = static_cast<std::size_t>(env_int("HTTP_THREADS", 8, 1, 512));
+  c.http_threads = static_cast<std::size_t>(env_int("HTTP_THREADS", 0, 0, 512));
+  c.http_worker_threads = static_cast<std::size_t>(env_int("HTTP_WORKER_THREADS", 32, 1, 1024));
   c.db_pool_size = static_cast<std::size_t>(env_int("DB_POOL_SIZE", 8, 1, 256));
   c.seed_on_empty = env_bool("SEED_ON_EMPTY", true);
   c.seed_dir = env_or("SEED_DIR", "data/stackoverflow");

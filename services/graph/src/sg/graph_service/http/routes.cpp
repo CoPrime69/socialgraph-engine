@@ -14,9 +14,11 @@ namespace sg::graph_service::http {
 namespace {
 
 using nlohmann::json;
+using sg::common::Request;
+using sg::common::Response;
 
 /// A non-empty query parameter, trimmed of ASCII whitespace.
-std::optional<std::string> text_param(const httplib::Request& req, const char* name) {
+std::optional<std::string> text_param(const Request& req, const char* name) {
   auto value = sg::common::query_param(req, name);
   if (!value) {
     return std::nullopt;
@@ -31,7 +33,7 @@ std::optional<std::string> text_param(const httplib::Request& req, const char* n
 
 std::string render(const json& body) { return body.dump(-1, ' ', false, json::error_handler_t::replace); }
 
-void write_cached(httplib::Response& res, const std::shared_ptr<const std::string>& body) {
+void write_cached(Response& res, const std::shared_ptr<const std::string>& body) {
   res.status = 200;
   res.set_content(*body, "application/json; charset=utf-8");
 }
@@ -72,7 +74,7 @@ std::int64_t target_user_id(const json& body) {
 
 }  // namespace
 
-domain::UserQuery parse_user_query(const httplib::Request& req) {
+domain::UserQuery parse_user_query(const Request& req) {
   domain::UserQuery query;
   if (auto q = text_param(req, "q")) {
     if (!sg::common::is_valid_utf8(*q) || sg::common::utf8_length(*q) > domain::kSearchMaxLength) {
@@ -100,29 +102,29 @@ domain::UserQuery parse_user_query(const httplib::Request& req) {
 
 void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
                      const sg::common::TokenVerifier& verifier, ReadCache& cache) {
-  server.get("/api/v1/meta/taxonomy", [&graph](const httplib::Request&, httplib::Response& res) {
+  server.get("/api/v1/meta/taxonomy", [&graph](const Request&, Response& res) {
     sg::common::write_json(res, 200, domain::to_json(*graph.taxonomy()));
   });
 
-  server.get("/api/v1/users", [&graph, &verifier, &cache](const httplib::Request& req, httplib::Response& res) {
+  server.get("/api/v1/users", [&graph, &verifier, &cache](const Request& req, Response& res) {
     (void)sg::common::require_auth(req, verifier);
     const auto query = parse_user_query(req);
     write_cached(res, cache.search(search_key(query), [&] { return render(domain::to_json(graph.list_users(query))); }));
   });
 
-  server.get("/api/v1/users/:id", [&graph, &verifier, &cache](const httplib::Request& req, httplib::Response& res) {
+  server.get("/api/v1/users/:id", [&graph, &verifier, &cache](const Request& req, Response& res) {
     (void)sg::common::require_auth(req, verifier);
     const auto id = sg::common::path_id(req, "id");
     write_cached(res, cache.member(ReadCache::Kind::profile, id, [&] { return render(domain::to_json(graph.profile(id))); }));
   });
 
-  server.get("/api/v1/me/profile", [&graph, &verifier, &cache](const httplib::Request& req, httplib::Response& res) {
+  server.get("/api/v1/me/profile", [&graph, &verifier, &cache](const Request& req, Response& res) {
     const auto caller = sg::common::require_auth(req, verifier).user_id;
     write_cached(res, cache.member(ReadCache::Kind::profile, caller,
                                    [&] { return render(domain::to_json(graph.my_profile(caller))); }));
   });
 
-  server.get("/api/v1/me/connections", [&graph, &verifier, &cache](const httplib::Request& req, httplib::Response& res) {
+  server.get("/api/v1/me/connections", [&graph, &verifier, &cache](const Request& req, Response& res) {
     const auto caller = sg::common::require_auth(req, verifier).user_id;
     write_cached(res, cache.member(ReadCache::Kind::connections, caller, [&] {
       const auto list = graph.my_connections(caller);
@@ -136,7 +138,7 @@ void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
 
   // Writes invalidate both members on this replica as soon as they commit (read-your-writes);
   // other replicas follow from graph.events.
-  server.post("/api/v1/me/connections", [&graph, &verifier, &cache](const httplib::Request& req, httplib::Response& res) {
+  server.post("/api/v1/me/connections", [&graph, &verifier, &cache](const Request& req, Response& res) {
     const auto claims = sg::common::require_auth(req, verifier);
     const auto other = target_user_id(sg::common::parse_json_body(req));
     const auto added = graph.connect(claims.user_id, other);
@@ -147,7 +149,7 @@ void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
     sg::common::write_json(res, 201, body);
   });
 
-  server.del("/api/v1/me/connections/:user_id", [&graph, &verifier, &cache](const httplib::Request& req, httplib::Response& res) {
+  server.del("/api/v1/me/connections/:user_id", [&graph, &verifier, &cache](const Request& req, Response& res) {
     const auto claims = sg::common::require_auth(req, verifier);
     const auto other = sg::common::path_id(req, "user_id");
     const auto version = graph.disconnect(claims.user_id, other);
@@ -156,7 +158,7 @@ void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
     sg::common::write_json(res, 200, {{"graph_version", version}});
   });
 
-  server.get("/internal/v1/snapshot", [&graph](const httplib::Request&, httplib::Response& res) {
+  server.get("/internal/v1/snapshot", [&graph](const Request&, Response& res) {
     sg::common::write_json(res, 200, domain::to_json(graph.snapshot()));
   });
 }

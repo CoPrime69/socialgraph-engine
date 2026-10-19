@@ -29,7 +29,8 @@ struct Config {
   std::string password_hash_profile = "owasp";     ///< PASSWORD_HASH_PROFILE: owasp | fast
   sg::common::PasswordHashParams password_hash = sg::common::PasswordHashParams::owasp();
   sg::common::RedisOptions redis;                  ///< REDIS_HOST / REDIS_PORT
-  std::size_t http_threads = 8;                    ///< HTTP_THREADS
+  std::size_t http_threads = 0;                    ///< HTTP_THREADS (event loops, 0 = one per CPU core)
+  std::size_t http_worker_threads = 32;            ///< HTTP_WORKER_THREADS (handler pool)
   std::size_t db_pool_size = 8;                    ///< DB_POOL_SIZE
   bool seed_on_empty = true;                       ///< SEED_ON_EMPTY
   std::optional<std::string> seed_demo_password;   ///< SEED_DEMO_PASSWORD (secret)

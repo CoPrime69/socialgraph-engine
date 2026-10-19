@@ -1,6 +1,22 @@
-# sg::common — shared runtime of the C++ services (HTTP bootstrap, JSON logging, config, errors,
+# sg::common — shared runtime of the C++ services (HTTP server, JSON logging, config, errors,
 # Ed25519 tokens, password hashing, PostgreSQL pool + migrations, Redis Streams, transactional outbox).
 
+# The HTTP server runs on Drogon (libdrogon-dev). Only src/http.cpp includes Drogon headers, so it is
+# a private dependency. The distribution's DrogonConfig.cmake insists on the development packages of
+# every optional backend Drogon was built with (MySQL, SQLite, yaml-cpp, ...), none of which are
+# used here, so the library and headers are located directly; libdrogon.so pulls in its own runtime
+# dependencies. Drogon's headers include <json/json.h> from jsoncpp (libjsoncpp-dev).
+find_package(Trantor CONFIG REQUIRED)
+find_path(DROGON_INCLUDE_DIR drogon/drogon.h REQUIRED)
+find_library(DROGON_LIBRARY drogon REQUIRED)
+find_path(JSONCPP_INCLUDE_DIR json/json.h PATH_SUFFIXES jsoncpp REQUIRED)
+find_library(JSONCPP_LIBRARY jsoncpp REQUIRED)
+add_library(sg_drogon INTERFACE IMPORTED)
+set_target_properties(sg_drogon PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${DROGON_INCLUDE_DIR};${JSONCPP_INCLUDE_DIR}"
+  INTERFACE_LINK_LIBRARIES "${DROGON_LIBRARY};Trantor::Trantor;${JSONCPP_LIBRARY}")
+
+# Service-to-service and healthcheck clients use cpp-httplib's Client.
 # The Debian/Ubuntu libcpp-httplib-dev package ships a *split* httplib.h (declarations only) plus
 # libcpp-httplib.so, compiled with OpenSSL/zlib/Brotli support. The same CPPHTTPLIB_* definitions
 # must be visible to every translation unit that includes httplib.h, otherwise class layouts differ
@@ -33,7 +49,7 @@ target_include_directories(sg_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(sg_common PUBLIC cxx_std_20)
 target_link_libraries(sg_common
   PUBLIC nlohmann_json::nlohmann_json PkgConfig::PQXX PkgConfig::CPPHTTPLIB Threads::Threads
-  PRIVATE PkgConfig::SODIUM PkgConfig::HIREDIS ZLIB::ZLIB)
+  PRIVATE sg_drogon PkgConfig::SODIUM PkgConfig::HIREDIS ZLIB::ZLIB)
 sg_set_warnings(sg_common)
 
 # Test-only helpers shared by the service test suites (temporary databases, env guards).

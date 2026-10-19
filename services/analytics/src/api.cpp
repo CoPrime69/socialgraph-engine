@@ -36,7 +36,7 @@ json user_ref(const UserInfo& user) {
 template <class Body>
 sg::common::Handler authenticated(AnalyticsEngine& engine, const sg::common::TokenVerifier& verifier,
                                   ApiOptions options, Body body) {
-  return [&engine, &verifier, options, body](const httplib::Request& req, httplib::Response& res) {
+  return [&engine, &verifier, options, body](const sg::common::Request& req, sg::common::Response& res) {
     const auto claims = sg::common::require_auth(req, verifier);
     std::shared_ptr<const Analytics> analytics;
     if (query_param(req, "min_version")) {
@@ -58,7 +58,7 @@ sg::common::Handler authenticated(AnalyticsEngine& engine, const sg::common::Tok
 // centrality version distinguishes a snapshot whose global metrics were recomputed at the same
 // graph version from the one that carried them over.)
 template <class Render>
-void cached_json(const httplib::Request& req, httplib::Response& res, const Analytics& a, const std::string& key,
+void cached_json(const sg::common::Request& req, sg::common::Response& res, const Analytics& a, const std::string& key,
                  Render&& render) {
   const std::string etag = "\"" + std::to_string(a.version()) + "-" + std::to_string(a.centrality_version) + "-" +
                            std::to_string(std::hash<std::string>{}(key)) + "\"";
@@ -121,6 +121,8 @@ std::string to_dot(const Analytics& analytics) {
   dot << "}\n";
   return dot.str();
 }
+
+bool may_wait(const sg::common::Request& req) { return req.has_param("min_version"); }
 
 void register_routes(sg::common::HttpServer& server, const ReadModel& model, AnalyticsEngine& engine,
                      const sg::common::TokenVerifier& verifier, ApiOptions options) {

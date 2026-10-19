@@ -15,7 +15,7 @@ namespace sg::graph_service::http {
 
 /// Parses the query string of GET /api/v1/users.
 /// @throws sg::common::ApiError 400 bad_request for a malformed parameter.
-[[nodiscard]] domain::UserQuery parse_user_query(const httplib::Request& req);
+[[nodiscard]] domain::UserQuery parse_user_query(const sg::common::Request& req);
 
 /// Registers
 /// * `GET    /api/v1/meta/taxonomy`             (public)

@@ -60,7 +60,7 @@ void AuthRateLimiters::check_register(const std::string& client) { enforce(regis
 
 void register_routes(sg::common::HttpServer& server, app::AccountService& accounts,
                      const sg::common::TokenVerifier& verifier, AuthRateLimiters& limits) {
-  server.post("/api/v1/auth/register", [&accounts, &limits](const httplib::Request& req, httplib::Response& res) {
+  server.post("/api/v1/auth/register", [&accounts, &limits](const sg::common::Request& req, sg::common::Response& res) {
     limits.check_register(sg::common::client_ip(req));
     const json body = sg::common::parse_json_body(req);
     domain::RegistrationInput input;
@@ -75,7 +75,7 @@ void register_routes(sg::common::HttpServer& server, app::AccountService& accoun
     sg::common::write_json(res, 201, auth_body(accounts.register_account(input)));
   });
 
-  server.post("/api/v1/auth/login", [&accounts, &limits](const httplib::Request& req, httplib::Response& res) {
+  server.post("/api/v1/auth/login", [&accounts, &limits](const sg::common::Request& req, sg::common::Response& res) {
     const json body = sg::common::parse_json_body(req);
     const auto handle = string_field(body, "handle");
     const auto password = string_field(body, "password");
@@ -96,7 +96,7 @@ void register_routes(sg::common::HttpServer& server, app::AccountService& accoun
     }
   });
 
-  server.get("/api/v1/auth/me", [&accounts, &verifier](const httplib::Request& req, httplib::Response& res) {
+  server.get("/api/v1/auth/me", [&accounts, &verifier](const sg::common::Request& req, sg::common::Response& res) {
     const auto claims = sg::common::require_auth(req, verifier);
     const auto account = accounts.me(claims.user_id);
     sg::common::write_json(res, 200,

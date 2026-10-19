@@ -15,8 +15,8 @@ permissions:
 
 env:
   APT_PACKAGES: >-
-    g++ clang cmake ninja-build pkg-config libcpp-httplib-dev nlohmann-json3-dev libpqxx-dev libpq-dev
-    libsodium-dev libhiredis-dev libgtest-dev libbenchmark-dev postgresql-client redis-tools
+    g++ clang cmake ninja-build pkg-config libdrogon-dev libjsoncpp-dev libcpp-httplib-dev nlohmann-json3-dev
+    libpqxx-dev libpq-dev libsodium-dev libhiredis-dev libgtest-dev libbenchmark-dev postgresql-client redis-tools
 
 jobs:
   backend:
@@ -50,7 +50,7 @@ jobs:
       SG_TEST_DATABASE_URL: postgresql://socialgraph:ci-password@localhost:5432/socialgraph_test
       SG_TEST_REDIS_HOST: localhost
       SG_TEST_REDIS_PORT: "6379"
-      TSAN_OPTIONS: halt_on_error=1 second_deadlock_stack=1
+      TSAN_OPTIONS: halt_on_error=1 second_deadlock_stack=1 suppressions=${{ github.workspace }}/cmake/tsan.supp
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
       UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
     steps:
