@@ -205,3 +205,74 @@ C++ conventions: C++20, `-Wall -Wextra -Wpedantic -Werror` in CI, no `using name
 `snake_case` functions/variables, `PascalCase` types, headers under `include/sg/<lib>/`,
 RAII everywhere (no owning raw pointers), errors as exceptions inside services
 (`sg::common::ApiError`), GoogleTest for tests (`ctest` discovers them).
+
+## 10. Real dataset — contract v2 (SUPERSEDES §3 taxonomy, §4 register body, §5 shapes and §8 seed where they conflict)
+
+The toy 100-user CSV is replaced by a real dataset: **Stack Overflow, Aug–Dec 2008** (Stack Exchange
+data dump via the ClickHouse public mirror, CC BY-SA 4.0). Users are the 18,648 people who interacted
+in that period; a **connection** is a real interaction (one answered the other's question or commented
+on the other's post), aggregated per pair (~205k connections). Files live in `data/stackoverflow/`
+(gzip CSV with header, UTF-8, RFC 4180 quoting, timestamps RFC 3339 UTC, empty field = NULL) and are
+produced reproducibly by `tools/dataset/build_stackoverflow_dataset.py` (pinned source URLs; checksums
+in `data/stackoverflow/manifest.json`).
+
+### 10.1 Files
+| file | columns |
+|------|---------|
+| `categories.csv` | `slug, name, description` — 10 technology domains, e.g. `web`, "Web Development" |
+| `branches.csv` | `name, category_slug` — the curated primary-technology tags (e.g. `python, scripting`) |
+| `users.csv` | `id, handle, display_name, reputation, influence, created_at, last_access_at, location, website_url, about, views, up_votes, down_votes, category, branch` (`category` = category **name**, `branch` = branch name; `influence` = reputation percentile 0–100, 2 dp) |
+| `connections.csv` | `user_a, user_b, interactions, first_interaction_at, last_interaction_at, strength` (`user_a < user_b`) |
+| `tags.csv` | `name, question_count, category_slug` (category may be empty) |
+| `questions.csv` | `id, owner_id, created_at, title, tags, score, view_count, answer_count, comment_count, favorite_count, accepted_answer_id, closed_at` (`tags` space-separated; `owner_id` empty when the owner is not in users.csv) |
+| `answers.csv` | `id, question_id, owner_id, created_at, score, comment_count, is_accepted` |
+| `comments.csv` | `id, post_id, user_id, created_at, score, text` |
+| `badges.csv` | `id, user_id, name, class, tag_based, awarded_at` (`class`: 1 gold, 2 silver, 3 bronze) |
+| `user_tags.csv` | `user_id, tag, posts, score` (per-user expertise from their questions and answers) |
+
+### 10.2 Ids
+Imported users keep their Stack Overflow user id (all < 100,000,000). identity-service account ids for
+self-registered members start at **100,000,000** (sequence `START WITH 100000000`), so the id spaces
+never collide. A demo member account is seeded: handle `demo`, id `100000000`, password from
+`SEED_DEMO_PASSWORD`; graph-service seeds its profile (display name "Demo Member", category
+"Web Development", branch `javascript`) connected (origin `member`) to the 20 highest-reputation
+imported users whose branch is `javascript`.
+
+### 10.3 Taxonomy (now data-driven)
+Categories and branches are rows in graph-service tables (`categories`, `branches`) loaded from the
+dataset; `GET /api/v1/meta/taxonomy` returns `{ "categories": [names...], "branches": [names...],
+"branch_categories": { "<branch>": "<category name>" } }` in display order. Validation of `category`
+/ `branch` = "exists in those tables" (FK), not a hard-coded list. `sg::graph::Profile` ids are the
+0-based row index of the category/branch in display order (`ORDER BY id`).
+
+### 10.4 Changes to identity (§4)
+`POST /auth/register` body is `{ handle, name, password, category, branch }` (+ optional `location`,
+`about` ≤ 500 chars). `influence` is no longer accepted from clients (ignored if sent). The
+`user.registered` payload becomes `{ user_id, handle, name, category, branch, location, about }`.
+identity does not seed the 18,648 imported users (they are profiles, not accounts — they cannot sign in);
+it seeds only the demo account.
+
+### 10.5 Changes to graph-service (§5)
+`UserProfile` = `{ id, handle, name, category, branch, influence, reputation, location, website_url,
+about, views, up_votes, down_votes, source ("stackoverflow" | "member"), external_url
+(`https://stackoverflow.com/users/<id>` for imported users, else null), created_at, last_access_at }`.
+Members get `reputation 1`, `influence 0`.
+Connection items: `{ user, strength, interactions, origin ("imported" | "member"), connected_at,
+first_interaction_at, last_interaction_at }`. `GET /users` gains `sort=reputation|name|id` (default
+`reputation` desc, ties by id) and `min_reputation`. The snapshot endpoint and `user.created` event
+carry the full `UserProfile`; `connection.added` carries `strength`.
+Strength: member-created connection = affinity (§8); imported = `round3(0.5·affinity + 0.5·(1 − e^(−interactions/3)))`
+(precomputed in `connections.csv`).
+
+### 10.6 New: content-service (port 8084, DB `content`)
+Owns questions, answers, comments, badges, tags and per-user tag expertise (read-only, imported), plus
+a read projection `authors(user_id, display_name, reputation)` for display. Routes (auth required):
+
+| Method & path | Response |
+|---------------|----------|
+| `GET /api/v1/users/{id}/activity` | `{ user_id, totals: { questions, answers, accepted_answers, comments, question_score, answer_score }, top_tags: [{ tag, posts, score }], badges: { gold, silver, bronze, recent: [{ name, class, awarded_at }] }, top_posts: [{ id, type ("question"\|"answer"), title, score, view_count, created_at, tags, url }] }` (zeros/empties for members) |
+| `GET /api/v1/tags?q=&limit=&offset=` | paginated `{ name, question_count, category }` by question_count desc |
+| `GET /api/v1/questions?tag=&q=&sort=score\|recent&limit=&offset=` | paginated `{ id, title, tags, score, view_count, answer_count, created_at, owner: { id, display_name } \| null, url }` |
+| `GET /api/v1/questions/{id}` | question + `answers: [{ id, owner, score, created_at, is_accepted }]` + `comment_count` |
+
+Gateway: `/api/v1/users/{id}/activity`, `/api/v1/tags`, `/api/v1/questions` → content-service.
