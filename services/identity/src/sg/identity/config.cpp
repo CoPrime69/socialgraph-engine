@@ -36,7 +36,8 @@ Config Config::from_env() {
 
   c.redis.host = env_or("REDIS_HOST", "127.0.0.1");
   c.redis.port = static_cast<int>(env_int("REDIS_PORT", 6379, 1, 65535));
-  c.http_threads = env_size("HTTP_THREADS", 8, 1, 512);
+  c.http_threads = env_size("HTTP_THREADS", 0, 0, 512);
+  c.http_worker_threads = env_size("HTTP_WORKER_THREADS", 32, 1, 1024);
   c.db_pool_size = env_size("DB_POOL_SIZE", 8, 1, 256);
   c.seed_on_empty = env_bool("SEED_ON_EMPTY", true);
   c.seed_demo_password = env_get("SEED_DEMO_PASSWORD");

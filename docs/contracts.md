@@ -198,7 +198,8 @@ legacy/                                  untouched original implementation
 ```
 
 System packages (Ubuntu 24.04; same in Dockerfiles and CI): `g++` 13 or `clang` 18, `cmake` ≥ 3.28,
-`ninja-build`, `libcpp-httplib-dev` (0.14.3), `nlohmann-json3-dev`, `libpqxx-dev` (7.8),
+`ninja-build`, `libdrogon-dev` (1.8.7) + `libjsoncpp-dev`, `libcpp-httplib-dev` (0.14.3, HTTP client),
+`nlohmann-json3-dev`, `libpqxx-dev` (7.8),
 `libsodium-dev`, `libhiredis-dev`, `libgtest-dev`, `libbenchmark-dev`.
 
 C++ conventions: C++20, `-Wall -Wextra -Wpedantic -Werror` in CI, no `using namespace` in headers,

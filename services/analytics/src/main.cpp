@@ -26,7 +26,8 @@ Environment:
   AUTH_PUBLIC_KEY                        identity Ed25519 public key, base64 (required)
   GRAPH_SERVICE_URL                      graph-service base URL (default http://localhost:8082)
   REDIS_HOST / REDIS_PORT                Redis for graph.events (default 127.0.0.1:6379)
-  HTTP_THREADS                           request worker threads (default 8)
+  HTTP_THREADS                           HTTP event-loop threads (default 0 = one per CPU core)
+  HTTP_WORKER_THREADS                    threads for requests that wait (?min_version, default 32)
   ANALYTICS_THREADS                      threads for centrality algorithms (default 0 = all cores)
   ANALYTICS_EXACT_BETWEENNESS_MAX_NODES  switch to sampled betweenness above this size (default 5000)
   ANALYTICS_BETWEENNESS_SAMPLES          pivots for sampled betweenness (default 256)
@@ -66,7 +67,13 @@ int serve() {
 
   common::HttpServerOptions http_options;
   http_options.port = port();
-  http_options.threads = static_cast<std::size_t>(common::env_int("HTTP_THREADS", 8, 1, 512));
+  http_options.threads = static_cast<std::size_t>(common::env_int("HTTP_THREADS", 0, 0, 512));
+  // Handlers read immutable in-memory snapshots, so they run on the event loops; only requests that
+  // may wait for a newer snapshot (?min_version) go to the worker pool.
+  http_options.blocking_handlers = false;
+  http_options.offload = may_wait;
+  http_options.worker_threads =
+      static_cast<std::size_t>(common::env_int("HTTP_WORKER_THREADS", 32, 1, 1024));
   common::HttpServer server("analytics-service", http_options);
   ApiOptions api_options;
   api_options.max_consistency_wait =

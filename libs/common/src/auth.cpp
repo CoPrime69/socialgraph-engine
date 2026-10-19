@@ -238,7 +238,7 @@ Claims TokenVerifier::verify_at(std::string_view token, std::int64_t now) const 
   return claims;
 }
 
-Claims require_auth(const httplib::Request& req, const TokenVerifier& verifier) {
+Claims require_auth(const Request& req, const TokenVerifier& verifier) {
   if (!req.has_header("Authorization")) {
     throw unauthenticated();
   }

@@ -1,0 +1,10 @@
+# ThreadSanitizer suppressions (CI: TSAN_OPTIONS=suppressions=cmake/tsan.supp).
+#
+# Drogon and trantor come from distro packages that are not built with -fsanitize=thread, so TSan
+# cannot see the atomics of trantor's lock-free task queue (EventLoop::queueInLoop) or the eventfd
+# that wakes a loop. Our own hand-offs to a loop publish themselves with __tsan_release/acquire
+# (queue_in_loop() in libs/common/src/http.cpp); what remains are the queue's internal nodes,
+# allocated by the queueing thread and freed by the loop. Only reports with these trantor frames on
+# a stack are suppressed: races in handlers, on worker threads or on the event loops still show.
+race:trantor::EventLoop::queueInLoop
+race:trantor::EventLoop::wakeup

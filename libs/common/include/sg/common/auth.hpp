@@ -11,7 +11,7 @@
 #include <string>
 #include <string_view>
 
-#include <httplib.h>
+#include "sg/common/http.hpp"
 
 namespace sg::common {
 
@@ -90,6 +90,6 @@ class TokenVerifier {
 
 /// Parses `Authorization: Bearer <token>` and verifies it.
 /// @throws ApiError 401 unauthenticated when the header is missing, malformed or the token is invalid.
-[[nodiscard]] Claims require_auth(const httplib::Request& req, const TokenVerifier& verifier);
+[[nodiscard]] Claims require_auth(const Request& req, const TokenVerifier& verifier);
 
 }  // namespace sg::common

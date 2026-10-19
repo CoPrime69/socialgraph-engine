@@ -16,7 +16,8 @@ struct Config {
   std::optional<std::string> database_url;     ///< GRAPH_DATABASE_URL
   std::optional<std::string> public_key_b64;   ///< AUTH_PUBLIC_KEY
   sg::common::RedisOptions redis;              ///< REDIS_HOST / REDIS_PORT
-  std::size_t http_threads = 8;                ///< HTTP_THREADS
+  std::size_t http_threads = 0;                ///< HTTP_THREADS (event loops, 0 = one per CPU core)
+  std::size_t http_worker_threads = 32;        ///< HTTP_WORKER_THREADS (handler pool)
   std::size_t db_pool_size = 8;                ///< DB_POOL_SIZE
   bool seed_on_empty = true;                   ///< SEED_ON_EMPTY
   std::string seed_dir = "data/stackoverflow"; ///< SEED_DIR

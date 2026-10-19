@@ -1,3 +1,4 @@
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <future>
@@ -7,7 +8,10 @@
 #include <thread>
 #include <vector>
 
+#include <pthread.h>
+
 #include <gtest/gtest.h>
+#include <httplib.h>
 #include <nlohmann/json.hpp>
 
 #include "sg/common/http.hpp"
@@ -31,30 +35,30 @@ class HttpServerTest : public ::testing::Test {
     options.max_body_bytes = 1024;
     server_ = std::make_unique<HttpServer>("http-test", options);
 
-    server_->get("/api/v1/ok", [](const httplib::Request&, httplib::Response& res) {
+    server_->get("/api/v1/ok", [](const Request&, Response& res) {
       write_json(res, 200, {{"ok", true}});
     });
-    server_->post("/api/v1/echo", [](const httplib::Request& req, httplib::Response& res) {
+    server_->post("/api/v1/echo", [](const Request& req, Response& res) {
       const json body = parse_json_body(req);
       write_json(res, 201, {{"name", body.at("name").get<std::string>()}});
     });
-    server_->get("/api/v1/boom", [](const httplib::Request&, httplib::Response&) {
+    server_->get("/api/v1/boom", [](const Request&, Response&) {
       throw std::runtime_error("secret internal detail: password=hunter2");
     });
-    server_->get("/api/v1/conflict", [](const httplib::Request&, httplib::Response&) {
+    server_->get("/api/v1/conflict", [](const Request&, Response&) {
       throw validation_failed({{"handle", "taken"}});
     });
-    server_->get("/api/v1/limited", [](const httplib::Request&, httplib::Response&) { throw rate_limited(42); });
-    server_->get("/api/v1/items/:id", [](const httplib::Request& req, httplib::Response& res) {
+    server_->get("/api/v1/limited", [](const Request&, Response&) { throw rate_limited(42); });
+    server_->get("/api/v1/items/:id", [](const Request& req, Response& res) {
       write_json(res, 200, {{"id", path_id(req, "id")}});
     });
-    server_->get("/api/v1/page", [](const httplib::Request& req, httplib::Response& res) {
+    server_->get("/api/v1/page", [](const Request& req, Response& res) {
       write_json(res, 200, {{"limit", query_int(req, "limit", 20, 1, 100)}, {"q", query_param(req, "q").value_or("")}});
     });
-    server_->get("/api/v1/whoami", [](const httplib::Request& req, httplib::Response& res) {
+    server_->get("/api/v1/whoami", [](const Request& req, Response& res) {
       write_json(res, 200, {{"ip", client_ip(req)}, {"request_id", current_request_id()}});
     });
-    server_->get("/api/v1/slow", [this](const httplib::Request&, httplib::Response& res) {
+    server_->get("/api/v1/slow", [this](const Request&, Response& res) {
       slow_entered_.set_value();
       std::this_thread::sleep_for(500ms);
       write_json(res, 200, {{"slow", true}});
@@ -316,6 +320,176 @@ TEST(HttpServerLifecycle, ListenOnBusyPortThrows) {
   options.port = port;
   HttpServer second("second", options);
   EXPECT_THROW(second.listen(), std::runtime_error);
+}
+
+TEST(HttpServerLifecycle, ListenOnUnparsableHostThrows) {
+  HttpServerOptions options;
+  options.host = "localhost";  // only numeric addresses are accepted
+  options.port = 1;
+  HttpServer server("bad-host", options);
+  EXPECT_THROW(server.listen(), std::runtime_error);
+}
+
+/// Runs `server` on an ephemeral loopback port for the lifetime of the object.
+class Running {
+ public:
+  explicit Running(HttpServer& server) : server_(server), port_(server.bind_to_any_port()) {
+    thread_ = std::thread([this] { server_.listen(); });
+    EXPECT_TRUE(server_.wait_until_ready());
+  }
+  ~Running() {
+    server_.stop();
+    thread_.join();
+  }
+  Running(const Running&) = delete;
+  Running& operator=(const Running&) = delete;
+  [[nodiscard]] int port() const { return port_; }
+
+ private:
+  HttpServer& server_;
+  int port_;
+  std::thread thread_;
+};
+
+std::string thread_name() {
+  std::array<char, 32> name{};
+  pthread_getname_np(pthread_self(), name.data(), name.size());
+  return name.data();
+}
+
+TEST(HttpServerDispatch, InlineHandlersRunOnTheEventLoopAndOffloadedOnesOnWorkers) {
+  HttpServerOptions options;
+  options.blocking_handlers = false;
+  options.worker_threads = 2;
+  options.offload = [](const Request& req) { return req.has_param("wait"); };
+  HttpServer server("dispatch", options);
+  server.get("/api/v1/where", [](const Request& req, Response& res) {
+    if (req.has_param("wait")) {
+      std::this_thread::sleep_for(50ms);
+    }
+    write_json(res, 200, {{"thread", thread_name()}, {"request_id", current_request_id()}});
+  });
+  Running running(server);
+  httplib::Client client("127.0.0.1", running.port());
+
+  auto r = client.Get("/api/v1/where", {{"X-Request-Id", "inline-1"}});
+  ASSERT_TRUE(r);
+  EXPECT_EQ(r->status, 200);
+  EXPECT_NE(json::parse(r->body)["thread"], "sg-http-worker");
+  EXPECT_EQ(json::parse(r->body)["request_id"], "inline-1");
+
+  r = client.Get("/api/v1/where?wait=1", {{"X-Request-Id", "pooled-1"}});
+  ASSERT_TRUE(r);
+  EXPECT_EQ(r->status, 200);
+  EXPECT_EQ(json::parse(r->body)["thread"], "sg-http-worker");
+  EXPECT_EQ(json::parse(r->body)["request_id"], "pooled-1");
+}
+
+TEST(HttpServerDispatch, BlockingHandlersRunOnWorkers) {
+  HttpServer server("blocking", HttpServerOptions{});
+  server.get("/api/v1/where", [](const Request&, Response& res) { write_json(res, 200, {{"thread", thread_name()}}); });
+  Running running(server);
+  httplib::Client client("127.0.0.1", running.port());
+  auto r = client.Get("/api/v1/where");
+  ASSERT_TRUE(r);
+  EXPECT_EQ(json::parse(r->body)["thread"], "sg-http-worker");
+}
+
+TEST(HttpServerRouting, FirstRegisteredMatchWins) {
+  HttpServer server("routing", HttpServerOptions{});
+  auto reply = [](std::string tag) {
+    return [tag](const Request& req, Response& res) {
+      json params = json::object();
+      for (const auto& [name, value] : req.path_params) {
+        params[name] = value;
+      }
+      write_json(res, 200, {{"route", tag}, {"params", params}});
+    };
+  };
+  server.get("/r/fixed", reply("literal"));
+  server.get("/r/:name", reply("param"));
+  server.get("/s/:name", reply("param"));
+  server.get("/s/fixed", reply("literal"));
+  server.get("/t/:a/x/:b", reply("two"));
+  server.post("/r/fixed", reply("post"));
+  Running running(server);
+  httplib::Client client("127.0.0.1", running.port());
+
+  auto expect_route = [&](const std::string& path, const std::string& route, const json& params) {
+    auto r = client.Get(path);
+    ASSERT_TRUE(r) << path;
+    ASSERT_EQ(r->status, 200) << path;
+    EXPECT_EQ(json::parse(r->body)["route"], route) << path;
+    EXPECT_EQ(json::parse(r->body)["params"], params) << path;
+  };
+  expect_route("/r/fixed", "literal", json::object());
+  expect_route("/r/other", "param", {{"name", "other"}});
+  expect_route("/s/fixed", "param", {{"name", "fixed"}});
+  expect_route("/t/1/x/2", "two", {{"a", "1"}, {"b", "2"}});
+  expect_route("/r/caf%C3%A9?x=1", "param", {{"name", "caf\xC3\xA9"}});
+  for (const auto& path : {"/r", "/r/a/b", "/t/1/y/2", "/t/1/x", "/R/fixed", "/r/fixed/"}) {
+    auto r = client.Get(path);
+    ASSERT_TRUE(r) << path;
+    EXPECT_EQ(r->status, 404) << path;
+  }
+  auto r = client.Post("/r/fixed", "", "text/plain");
+  ASSERT_TRUE(r);
+  EXPECT_EQ(json::parse(r->body)["route"], "post");
+  r = client.Put("/r/fixed", "", "text/plain");
+  ASSERT_TRUE(r);
+  EXPECT_EQ(r->status, 404);
+  r = client.Head("/healthz");
+  ASSERT_TRUE(r);
+  EXPECT_EQ(r->status, 200);
+  EXPECT_TRUE(r->body.empty());
+}
+
+TEST(HttpServerRouting, RoutesCannotBeAddedAfterListen) {
+  HttpServer server("frozen", HttpServerOptions{});
+  Running running(server);
+  EXPECT_THROW(server.get("/late", [](const Request&, Response&) {}), std::logic_error);
+}
+
+TEST(HttpServerLifecycle, ServersComeAndGoInOneProcess) {
+  auto make = [](const std::string& name) {
+    auto server = std::make_unique<HttpServer>(name, HttpServerOptions{});
+    server->get("/api/v1/name", [name](const Request&, Response& res) { write_json(res, 200, {{"name", name}}); });
+    return server;
+  };
+  for (int round = 0; round < 10; ++round) {
+    auto a = make("a" + std::to_string(round));
+    auto b = make("b" + std::to_string(round));
+    Running run_a(*a);
+    Running run_b(*b);
+    ASSERT_NE(run_a.port(), run_b.port());
+    for (const auto& [running, name] : {std::pair{&run_a, a->service_name()}, std::pair{&run_b, b->service_name()}}) {
+      httplib::Client client("127.0.0.1", running->port());
+      auto r = client.Get("/api/v1/name");
+      ASSERT_TRUE(r);
+      EXPECT_EQ(json::parse(r->body)["name"], name);
+    }
+  }
+}
+
+TEST(HttpTypes, HeadersAreCaseInsensitiveAndInjectionSafe) {
+  Request req;
+  req.set_header("authorization", "Bearer a");
+  req.set_header("X-Multi", "1");
+  req.set_header("x-multi", "2");
+  req.set_header("X-Evil", "a\r\nInjected: yes");
+  EXPECT_TRUE(req.has_header("Authorization"));
+  EXPECT_EQ(req.get_header_value("AUTHORIZATION"), "Bearer a");
+  EXPECT_EQ(req.get_header_value("X-Multi", 1), "2");
+  EXPECT_EQ(req.get_header_value("X-Multi", 2), "");
+  EXPECT_FALSE(req.has_header("X-Evil"));
+
+  Response res;
+  res.set_content("a", "text/plain");
+  res.set_content("{}", "application/json");
+  EXPECT_EQ(res.get_header_value("content-type"), "application/json");
+  EXPECT_EQ(res.get_header_value("Content-Type", 1), "");
+  res.set_header("Location", "/x\n");
+  EXPECT_FALSE(res.has_header("location"));
 }
 
 }  // namespace

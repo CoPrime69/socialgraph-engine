@@ -50,7 +50,8 @@ Environment:
   SEED_ON_EMPTY           import SEED_DIR when the database is empty (default true)
   SEED_DIR                directory with categories/branches/users/connections.csv.gz (default data/stackoverflow)
   CONSUMER_NAME           Redis consumer name in group graph-service (default: host name)
-  HTTP_THREADS            request worker threads (default 8)
+  HTTP_THREADS            HTTP event-loop threads (default 0 = one per CPU core)
+  HTTP_WORKER_THREADS     threads running request handlers (default 32)
   DB_POOL_SIZE            PostgreSQL connections (default 8)
   LOG_LEVEL               debug|info|warn|error (default info)
 )";
@@ -105,6 +106,7 @@ int serve(const Config& config) {
   common::HttpServerOptions options;
   options.port = config.port;
   options.threads = config.http_threads;
+  options.worker_threads = config.http_worker_threads;  // handlers query PostgreSQL
   common::HttpServer server("graph-service", options);
   sg::graph_service::http::register_routes(server, graph, verifier);
   server.set_readiness_check([&pool] { return pool.ping(); });

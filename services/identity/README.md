@@ -67,7 +67,9 @@ graph-service seeds the matching profile itself. An empty database with seeding 
 | `TAXONOMY_REFRESH_SECONDS` | `300` | |
 | `SEED_ON_EMPTY` | `true` | seed the demo account into an empty database |
 | `SEED_DEMO_PASSWORD` | – | 8–128 bytes (secret) |
-| `HTTP_THREADS` / `DB_POOL_SIZE` | `8` / `8` | |
+| `HTTP_THREADS` | `0` | HTTP event-loop threads; `0` = one per CPU core |
+| `HTTP_WORKER_THREADS` | `32` | threads running request handlers (they wait on PostgreSQL) |
+| `DB_POOL_SIZE` | `8` | |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` | |
 | `LOGIN_RATE_LIMIT_PER_IP` | `30` | login attempts per client and window; `0` disables |
 | `LOGIN_RATE_LIMIT_PER_HANDLE` | `10` | failed logins per handle and window; `0` disables |

@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(SG_BUILD_TESTS "Build unit and integration tests" ON)
 option(SG_BUILD_BENCHMARKS "Build micro-benchmarks" ON)
-option(SG_BUILD_SERVICES "Build the network services (needs libpqxx, libsodium, hiredis, httplib)" ON)
+option(SG_BUILD_SERVICES "Build the network services (needs libpqxx, libsodium, hiredis, drogon, httplib)" ON)
 option(SG_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 set(SG_SANITIZE "" CACHE STRING "Sanitizers to enable, e.g. address,undefined or thread")
 
