@@ -1,0 +1,103 @@
+name,id,password,category,influence,branch
+User 1,user1,4Qs2Rp7Uw8Ky,Engineering,70.5,software
+User 2,user2,jX9Dn3Mz6Nw2,Finance,82.7,accounting
+User 3,user3,Lm5Gf1Bq4Th8,Marketing,61.2,marketing
+User 4,user4,Ej2Pv7Zc9Yh3,Sales,77.4,sales
+User 5,user5,Tn6Rf8Qw2Mv1,HR,68.9,human resources
+User 6,user6,3Ks9Xp4Jb6Dw,Engineering,75.3,electrical
+User 7,user7,Fm8Rz2Wq6Cy,Marketing,63.8,marketing
+User 8,user8,Lj1Tx5Bv7Np,Finance,84.1,accounting
+User 9,user9,2Gq8Rm4Sz9X,Sales,71.6,sales
+User 10,user10,Nh7Wy3Ek5Pr,HR,65.4,human resources
+User 11,user11,Kb9Xp7Lw3Rt5,Engineering,80.2,software
+User 12,user12,Lz7Dt2Gf5Uj9,Finance,88.5,accounting
+User 13,user13,Ft3Ws8Lk2Ve7,Marketing,57.1,marketing
+User 14,user14,Rd4Jn1Gq9Hp2,Sales,73.5,sales
+User 15,user15,Kp6Yt9Sw1Mx4,HR,70.1,human resources
+User 16,user16,9Tp8Wq3LzHk7,Engineering,78.9,electrical
+User 17,user17,Jf1Kn3Mt9Cy4,Marketing,62.5,marketing
+User 18,user18,Nb2Xq6Fu3Vo8,Finance,79.9,accounting
+User 19,user19,Ct9Hf5Lz3Jk1,Sales,65.8,sales
+User 20,user20,Lj4Nw1Tk7Pr2,HR,71.3,human resources
+User 21,user21,Df9Gp2Cv7Zx8,Engineering,84.4,software
+User 22,user22,8Tx9Vq5WsH1P,Finance,90,accounting
+User 23,user23,Jn1Zp8Yq7Lu3,Marketing,58.2,marketing
+User 24,user24,Gf6Xk2Ra9Bp5,Sales,69.1,sales
+User 25,user25,6Ty7Ub9Vr2Pd,HR,66.7,human resources
+User 26,user26,8Fg5Xr1Jt9Wq,Engineering,77.8,electrical
+User 27,user27,7Hr3Vz9Fb1Wx,Marketing,64.3,marketing
+User 28,user28,Zg5Pq1Tk7Hv4,Finance,82.1,accounting
+User 29,user29,2Fw5Rt8LhN3D,Sales,72.4,sales
+User 30,user30,Fy6Mk4Lt8Wq9,HR,63.5,human resources
+User 31,user31,Kd9Ys2Lq7Tz3,Engineering,83.6,software
+User 32,user32,4Bp8Hs1Gz2Vx,Finance,75.8,accounting
+User 33,user33,Lf1Tm5Pr9Zc7,Marketing,69.2,marketing
+User 34,user34,9Rc4Wz6Qk2Sy,Sales,75.1,sales
+User 35,user35,3Tx7Jr9Qh2Uv,HR,78.5,human resources
+User 36,user36,7Vz9Nq2Yp8Wh,Engineering,79.1,electrical
+User 37,user37,5Xq6Ls3Fm9Nj,Marketing,70.3,marketing
+User 38,user38,9Gf2Wv5Xp6Fy,Finance,81.5,accounting
+User 39,user39,3Km8Nr7Vz1Wr,Sales,74.2,sales
+User 40,user40,Tg2Qn6Vf5Xp3,HR,79.9,human resources
+User 41,user41,1Ft7Kw9Hb2Qy,Engineering,85.4,software
+User 42,user42,5Mn3Pr9Dv6Jh,Finance,77.3,accounting
+User 43,user43,Lv9Yn4Uj2Sg7,Marketing,67.6,marketing
+User 44,user44,Zt6Wq2Fb9Gm5,Sales,71.7,sales
+User 45,user45,7Vr3Ft1Pj2Kb,HR,82.3,human resources
+User 46,user46,9Vz5Lc3Wq2Xt,Engineering,80.7,electrical
+User 47,user47,4Xp1Jt9Nw7Yk,Marketing,75,marketing
+User 48,user48,3Fy2Qp5Ls9Uj,Finance,80,accounting
+User 49,user49,2Zr6Hq9Jk8Wm,Sales,72,sales
+User 50,user50,8Fm7Dq1Tp2Jr,HR,68.4,human resources
+User 51,user51,3Vz9Ty8Fr5Qb,Engineering,76.5,software
+User 52,user52,2Np6Wr9Tb1Uq,Finance,79.8,accounting
+User 53,user53,1Fq7Br9Wx2Kl,Marketing,66.9,marketing
+User 54,user54,7Xw5Rn3Pj6Yd,Sales,74,sales
+User 55,user55,4Wy9Dp1Qz8Hs,HR,65.6,human resources
+User 56,user56,9Tf1Pb6Ws2Xv,Engineering,81.2,electrical
+User 57,user57,5Wp9Jr2Yh4Gt,Marketing,68.4,marketing
+User 58,user58,8Xq3Kn2Zy5Jp,Finance,76.7,accounting
+User 59,user59,2Rp7Fm9Tz4Vd,Sales,79.5,sales
+User 60,user60,3Cv1Hp7Zy5Qx,HR,73.1,human resources
+User 61,user61,4Tz3Dq9Xf7Wp,Engineering,75.1,software
+User 62,user62,8Sy1Vz7Jq5Fw,Finance,74.3,accounting
+User 63,user63,5Xh3Nm9Pq7Jw,Marketing,72.1,marketing
+User 64,user64,2Zv5Wm9Ft4Wr,Sales,80.4,sales
+User 65,user65,3Qs1Nx2Yb9Jt,HR,66.8,human resources
+User 66,user66,6Qy7Tx4Vr1Wz,Engineering,77,electrical
+User 67,user67,1Wq8Yj6Nb2Xm,Marketing,73.9,marketing
+User 68,user68,3Vw5Rq2Kx1Bt,Finance,78.6,accounting
+User 69,user69,9Mf4Pz2W7Dt,Sales,71.8,sales
+User 70,user70,7Yq3Ft9Mw1Dp,HR,78.1,human resources
+User 71,user71,2Kw9Ft6Lz5Wr,Engineering,82.1,software
+User 72,user72,5Xp4Nv1Wr2Hz,Finance,75.6,accounting
+User 73,user73,6Tp2Ym1Jv9Xs,Marketing,74.2,marketing
+User 74,user74,4Vr8Fp3Nw7Qr,Sales,70.7,sales
+User 75,user75,7Lq2Kz8Tr1Ws,HR,79.2,human resources
+User 76,user76,9Zt6Jv3Fq7Xm,Engineering,85.7,software
+User 77,user77,8Wp2Rb5Yr3Xz,Finance,77,accounting
+User 78,user78,6Vw1Jt3Nm8Qb,Marketing,69,marketing
+User 79,user79,5Py9Fq1Xz7Tn,Sales,72.9,sales
+User 80,user80,7Mw6Kn2Lv3Yq,HR,67,human resources
+User 81,user81,2Rv3Nf1Yp5Kt,Engineering,83.5,software
+User 82,user82,4Fw9Xs5Dp7Mq,Finance,81.4,accounting
+User 83,user83,3Vn6Jz2Wp5Qr,Marketing,70.8,marketing
+User 84,user84,1Kn7Ly9Xr5Tw,Sales,75.3,sales
+User 85,user85,8Vp4Vw2Jq7Fr,HR,66.5,human resources
+User 86,user86,9Rs5Km2Zx1Qs,Engineering,79.8,electrical
+User 87,user87,7Mt9Lz5Fr2Xp,Marketing,73.2,marketing
+User 88,user88,4Yq2Pw9Bv7Ns,Finance,80.3,accounting
+User 89,user89,5Qw7Jv1Ls9Zx,Sales,71.2,sales
+User 90,user90,3Lp1Jz2Vr7Qb,HR,74.8,human resources
+User 91,user91,6Zt5Qs9Wv2Fg,Engineering,78.3,electrical
+User 92,user92,8Fw3Kv5Jr2Pn,Finance,76.4,accounting
+User 93,user93,7Yj1Wp4Xf3Vb,Marketing,67.3,marketing
+User 94,user94,2Nx6Pz9Vw5Jq,Sales,79.1,sales
+User 95,user95,1Mw7Lq2Ft9Xt,HR,80,human resources
+User 96,user96,6Qz8Nr2Jv3Fm,Engineering,81.5,software
+User 97,user97,5Wr3Jt1Nx2Xq,Finance,82.6,accounting
+User 98,user98,4Lp6Tx3Zv7Yb,Marketing,72.8,marketing
+User 99,user99,3Wz2Qp1Jt6Lb,Sales,76,sales
+User 100,user100,9Ft7Zv3Wq1Jm,HR,68.5,human resources
+prakhar,user123,prakhar123,Engineering,89,Electrical
+pragati,user101,prakhar123,Engineering,65,HR
