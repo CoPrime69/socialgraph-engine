@@ -109,6 +109,31 @@ TEST_F(PgTest, BrokenConnectionsAreDiscardedAndReplaced) {
   EXPECT_TRUE(pool.ping());
 }
 
+TEST_F(PgTest, AutocommitReadsRetryOnABrokenConnection) {
+  PgPool pool(options(1));
+  int backend_pid = 0;
+  {
+    auto lease = pool.acquire();
+    backend_pid = lease->backendpid();
+  }
+  {
+    pqxx::connection admin{db_->url()};
+    pqxx::nontransaction tx{admin};
+    tx.exec_params("SELECT pg_terminate_backend($1)", backend_pid);
+  }
+  const auto pid = pool.with_read([](pqxx::nontransaction& tx) { return tx.query_value<int>("SELECT pg_backend_pid()"); });
+  EXPECT_NE(pid, backend_pid);
+  // No transaction is open around the statement.
+  EXPECT_FALSE(pool.with_read([](pqxx::nontransaction& tx) {
+    return tx.query_value<std::string>("SELECT current_setting('transaction_isolation')").empty();
+  }));
+  EXPECT_EQ(pool.with_read([](pqxx::nontransaction& tx) {
+              return tx.query_value<long>("SELECT count(*) FROM pg_stat_activity WHERE pid = pg_backend_pid() "
+                                          "AND backend_xid IS NULL AND xact_start = query_start");
+            }),
+            1);
+}
+
 TEST_F(PgTest, UnreachableDatabaseIs503) {
   PgPoolOptions o;
   o.conninfo = "postgresql://nobody:nothing@127.0.0.1:1/none";

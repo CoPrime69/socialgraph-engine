@@ -57,7 +57,7 @@ std::vector<std::string> split_tags(const std::string& joined) {
 }
 
 Activity PostgresContentRepository::activity(std::int64_t user_id) {
-  return pool_.with_transaction([&](pqxx::work& tx) {
+  return pool_.with_read([&](pqxx::nontransaction& tx) {
     Activity a;
     a.user_id = user_id;
     // Precomputed at import (migration 0002); members without any content have no row.
@@ -119,7 +119,7 @@ Activity PostgresContentRepository::activity(std::int64_t user_id) {
 
 Page<TagInfo> PostgresContentRepository::tags(const std::optional<std::string>& prefix, std::int64_t limit,
                                                std::int64_t offset) {
-  return pool_.with_transaction([&](pqxx::work& tx) {
+  return pool_.with_read([&](pqxx::nontransaction& tx) {
     std::optional<std::string> pattern;
     if (prefix) pattern = escape_like(*prefix) + "%";
     Page<TagInfo> page{{}, 0, limit, offset};
@@ -140,7 +140,7 @@ Page<TagInfo> PostgresContentRepository::tags(const std::optional<std::string>& 
 }
 
 Page<QuestionSummary> PostgresContentRepository::questions(const QuestionQuery& query) {
-  return pool_.with_transaction([&](pqxx::work& tx) {
+  return pool_.with_read([&](pqxx::nontransaction& tx) {
     Page<QuestionSummary> page{{}, 0, query.limit, query.offset};
     std::optional<std::int64_t> tag_id;
     if (query.tag) {
@@ -165,7 +165,7 @@ Page<QuestionSummary> PostgresContentRepository::questions(const QuestionQuery& 
 }
 
 std::optional<QuestionDetail> PostgresContentRepository::question(std::int64_t id) {
-  return pool_.with_transaction([&](pqxx::work& tx) -> std::optional<QuestionDetail> {
+  return pool_.with_read([&](pqxx::nontransaction& tx) -> std::optional<QuestionDetail> {
     const std::string sql = std::string("SELECT ") + kQuestionColumns + kQuestionTags +
                             ", q.accepted_answer_id, " SG_RFC3339("q.closed_at") ","
                             " (SELECT count(*) FROM comments c WHERE c.question_id = q.id)"

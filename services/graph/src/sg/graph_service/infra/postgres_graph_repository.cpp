@@ -126,7 +126,7 @@ domain::Taxonomy PostgresGraphRepository::load_taxonomy() {
 }
 
 std::optional<domain::ProfileWithCount> PostgresGraphRepository::find_profile(std::int64_t user_id) {
-  return pool_.with_transaction([&](pqxx::work& tx) -> std::optional<domain::ProfileWithCount> {
+  return pool_.with_read([&](pqxx::nontransaction& tx) -> std::optional<domain::ProfileWithCount> {
     const auto result = tx.exec_params(std::string("SELECT ") + kProfileColumns + ", " + kConnectionCount +
                                            " FROM profiles p WHERE p.user_id = $1",
                                        user_id);
@@ -368,7 +368,7 @@ domain::AddedConnection PostgresGraphRepository::add_connection(std::int64_t use
   // the batch free of failing statements.
   std::optional<domain::UserProfile> other;
   bool caller_exists = false;
-  pool_.with_transaction([&](pqxx::work& tx) {
+  pool_.with_read([&](pqxx::nontransaction& tx) {
     for (const auto& row : tx.exec_params(std::string("SELECT ") + kProfileColumns +
                                                " FROM profiles p WHERE p.user_id = $1 OR p.user_id = $2",
                                            user_id, other_id)) {

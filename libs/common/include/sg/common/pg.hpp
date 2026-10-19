@@ -82,6 +82,12 @@ class PgPool {
   template <class F>
   auto with_transaction(F&& f);
 
+  /// Runs read-only `f(pqxx::nontransaction&)` in autocommit mode: no BEGIN/COMMIT round trips,
+  /// each statement sees its own snapshot. Meant for single-statement reads. A connection that
+  /// died while idle is replaced and `f` retried once (reads are idempotent).
+  template <class F>
+  auto with_read(F&& f);
+
   /// Opens a new connection that is not part of the pool (e.g. to hold a session-level advisory
   /// lock), configured like pooled connections. @throws pqxx::broken_connection.
   [[nodiscard]] std::unique_ptr<pqxx::connection> open_dedicated_connection() const;
@@ -146,6 +152,23 @@ auto PgPool::with_transaction(F&& f) {
     } catch (const pqxx::in_doubt_error&) {
       tx.reset();
       lease.discard();
+      throw;
+    }
+  }
+}
+
+template <class F>
+auto PgPool::with_read(F&& f) {
+  for (int attempt = 1;; ++attempt) {
+    Lease lease = acquire();
+    try {
+      pqxx::nontransaction tx(*lease);
+      return std::invoke(f, tx);
+    } catch (const pqxx::broken_connection&) {
+      lease.discard();
+      if (attempt < 2) {
+        continue;
+      }
       throw;
     }
   }
