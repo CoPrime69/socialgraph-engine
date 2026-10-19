@@ -132,6 +132,39 @@ TEST_F(TokenTest, ExpiredTokenIsRejectedOutsideTheSkew) {
   EXPECT_NO_THROW((void)verifier.verify(within_skew.token));
 }
 
+TEST_F(TokenTest, CachedTokenIsStillCheckedForExpiry) {
+  const std::int64_t now = unix_now();
+  const auto token = issuer.issue_at(101, "ada_l", "Ada", now).token;
+  EXPECT_EQ(verifier.verify_at(token, now).user_id, 101);  // verified and cached
+  EXPECT_EQ(verifier.verify_at(token, now + 60).user_id, 101);  // served from the cache
+  try {
+    (void)verifier.verify_at(token, now + 8 * 3600 + 31);
+    FAIL() << "expired token accepted from the cache";
+  } catch (const ApiError& e) {
+    EXPECT_EQ(e.message(), "Access token expired");
+  }
+  // Not usable before it was issued either (beyond the skew).
+  EXPECT_THROW((void)verifier.verify_at(token, now - 31), ApiError);
+}
+
+TEST_F(TokenTest, ForgedTokenIsRejectedEvenAfterTheGenuineOneWasCached) {
+  const auto genuine = issuer.issue(101, "ada_l", "Ada").token;
+  (void)verifier.verify(genuine);
+  auto parts = split(genuine);
+  auto payload = json::parse(decode_text(parts.payload));
+  payload["sub"] = "102";
+  expect_rejected(parts.header + "." + b64(payload.dump()) + "." + parts.signature);
+  expect_rejected(genuine.substr(0, genuine.size() - 2) + (genuine.ends_with("AA") ? "BB" : "AA"));
+  EXPECT_EQ(verifier.verify(genuine).user_id, 101);
+}
+
+TEST_F(TokenTest, CacheCanBeDisabled) {
+  const TokenVerifier uncached(keys.public_key_b64, "socialgraph-identity", 0);
+  const auto token = issuer.issue(101, "ada_l", "Ada").token;
+  EXPECT_EQ(uncached.verify(token).user_id, 101);
+  EXPECT_EQ(uncached.verify(token).handle, "ada_l");
+}
+
 TEST_F(TokenTest, TokenFromTheFutureIsRejected) {
   expect_rejected(issuer.issue_at(101, "ada_l", "Ada", unix_now() + 3600).token);
 }

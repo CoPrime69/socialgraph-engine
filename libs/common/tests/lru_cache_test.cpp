@@ -20,6 +20,27 @@ TEST(LruCache, GetReturnsWhatWasPut) {
   EXPECT_EQ(cache.stats().size, 1U);
 }
 
+TEST(LruCache, EraseRemovesOneKey) {
+  LruCache<int, int, 1> cache(4);
+  cache.put(1, 1);
+  cache.put(2, 2);
+  EXPECT_TRUE(cache.erase(1));
+  EXPECT_FALSE(cache.erase(1));
+  EXPECT_FALSE(cache.get(1).has_value());
+  EXPECT_EQ(cache.get(2), 2);
+  cache.put(1, 3);  // usable again after erase
+  EXPECT_EQ(cache.get(1), 3);
+  EXPECT_EQ(cache.stats().size, 2U);
+}
+
+TEST(LruCache, PutIfChecksThePredicate) {
+  LruCache<int, int, 1> cache(4);
+  EXPECT_FALSE(cache.put_if(1, 1, [] { return false; }));
+  EXPECT_FALSE(cache.get(1).has_value());
+  EXPECT_TRUE(cache.put_if(1, 2, [] { return true; }));
+  EXPECT_EQ(cache.get(1), 2);
+}
+
 TEST(LruCache, EvictsLeastRecentlyUsed) {
   LruCache<int, int, 1> cache(3);
   cache.put(1, 1);

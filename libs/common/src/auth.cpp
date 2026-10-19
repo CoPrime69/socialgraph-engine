@@ -13,6 +13,7 @@
 
 #include "sg/common/crypto.hpp"
 #include "sg/common/errors.hpp"
+#include "sg/common/lru_cache.hpp"
 #include "sg/common/time.hpp"
 #include "sodium_init.hpp"
 
@@ -161,7 +162,19 @@ TokenIssuer::Issued TokenIssuer::issue_at(std::int64_t user_id, const std::strin
 
 std::string TokenIssuer::public_key_b64() const { return base64_encode(public_key_); }
 
-TokenVerifier::TokenVerifier(std::string public_key_b64, std::string issuer) : issuer_(std::move(issuer)) {
+struct TokenVerifier::Verified {
+  Claims claims;
+  std::int64_t not_before = 0;  ///< max(iat, nbf): the token must not be used earlier (with skew)
+};
+
+class TokenVerifier::Cache {
+ public:
+  explicit Cache(std::size_t entries) : lru(entries) {}
+  LruCache<std::string, std::shared_ptr<const Verified>> lru;
+};
+
+TokenVerifier::TokenVerifier(std::string public_key_b64, std::string issuer, std::size_t cache_entries)
+    : issuer_(std::move(issuer)), cache_(cache_entries > 0 ? std::make_shared<Cache>(cache_entries) : nullptr) {
   detail::ensure_sodium();
   const auto key = decode_exact(public_key_b64, crypto_sign_PUBLICKEYBYTES, "public key");
   std::copy(key.begin(), key.end(), public_key_.begin());
@@ -173,6 +186,30 @@ Claims TokenVerifier::verify_at(std::string_view token, std::int64_t now) const 
   if (token.empty() || token.size() > kMaxTokenBytes) {
     throw invalid_token();
   }
+  if (!cache_) {
+    return check_time(verify_signature_and_claims(token), now);
+  }
+  std::string key(token);
+  if (auto hit = cache_->lru.get(key)) {
+    return check_time(**hit, now);
+  }
+  auto verified = std::make_shared<const Verified>(verify_signature_and_claims(token));
+  auto claims = check_time(*verified, now);  // only cache tokens that are valid right now
+  cache_->lru.put(std::move(key), std::move(verified));
+  return claims;
+}
+
+Claims TokenVerifier::check_time(const Verified& verified, std::int64_t now) {
+  if (verified.not_before > now + kClockSkewSeconds) {
+    throw invalid_token();  // issued in the future, or not valid yet
+  }
+  if (now > verified.claims.expires_at + kClockSkewSeconds) {
+    throw unauthenticated("Access token expired");
+  }
+  return verified.claims;
+}
+
+TokenVerifier::Verified TokenVerifier::verify_signature_and_claims(std::string_view token) const {
   const auto first_dot = token.find('.');
   if (first_dot == std::string_view::npos) {
     throw invalid_token();
@@ -223,19 +260,11 @@ Claims TokenVerifier::verify_at(std::string_view token, std::int64_t now) const 
   if (claims.expires_at <= claims.issued_at) {
     throw invalid_token();
   }
-  if (claims.issued_at > now + kClockSkewSeconds) {
-    throw invalid_token();  // issued in the future
-  }
-  if (now > claims.expires_at + kClockSkewSeconds) {
-    throw unauthenticated("Access token expired");
-  }
+  std::int64_t not_before = claims.issued_at;
   if (payload.contains("nbf")) {
-    const std::int64_t nbf = integer_claim(payload, "nbf");
-    if (nbf > now + kClockSkewSeconds) {
-      throw invalid_token();
-    }
+    not_before = std::max(not_before, integer_claim(payload, "nbf"));
   }
-  return claims;
+  return {std::move(claims), not_before};
 }
 
 Claims require_auth(const httplib::Request& req, const TokenVerifier& verifier) {

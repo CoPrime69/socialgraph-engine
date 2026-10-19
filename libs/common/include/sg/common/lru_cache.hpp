@@ -56,6 +56,28 @@ class LruCache {
     }
   }
 
+  /// put() only if `still_valid()` holds, evaluated under the shard lock. A writer that changes
+  /// what `still_valid` checks and then erase()s the key can therefore never be overtaken by a put
+  /// that checked before the change.
+  template <class Pred>
+  bool put_if(const Key& key, Value value, Pred&& still_valid) {
+    auto& shard = shard_for(key);
+    std::lock_guard lock(shard.mutex);
+    if (!still_valid()) return false;
+    if (auto it = shard.index.find(key); it != shard.index.end()) {
+      it->second->second = std::move(value);
+      shard.order.splice(shard.order.begin(), shard.order, it->second);
+      return true;
+    }
+    shard.order.emplace_front(key, std::move(value));
+    shard.index.emplace(key, shard.order.begin());
+    if (shard.order.size() > per_shard_) {
+      shard.index.erase(shard.order.back().first);
+      shard.order.pop_back();
+    }
+    return true;
+  }
+
   /// Cached value for `key`, or `load()` stored and returned. Concurrent misses for the same key
   /// may both call `load()`; the values must be interchangeable (true for cached reads of
   /// immutable data, which is what this is for).
@@ -65,6 +87,17 @@ class LruCache {
     Value value = std::forward<Load>(load)();
     put(key, value);
     return value;
+  }
+
+  /// Removes `key`; true when it was cached.
+  bool erase(const Key& key) {
+    auto& shard = shard_for(key);
+    std::lock_guard lock(shard.mutex);
+    auto it = shard.index.find(key);
+    if (it == shard.index.end()) return false;
+    shard.order.erase(it->second);
+    shard.index.erase(it);
+    return true;
   }
 
   void clear() {
