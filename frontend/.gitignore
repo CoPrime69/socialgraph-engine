@@ -1,0 +1,3 @@
+# Local overrides for Vite env files (never commit secrets or personal targets)
+.env.local
+.env.*.local
