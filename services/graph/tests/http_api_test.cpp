@@ -11,6 +11,7 @@
 #include "fakes.hpp"
 #include "sg/graph_service/app/graph_service.hpp"
 #include "sg/graph_service/http/routes.hpp"
+#include "sg/graph_service/infra/graph_events_invalidator.hpp"
 
 namespace {
 
@@ -27,7 +28,7 @@ class GraphApiTest : public ::testing::Test {
     sg::common::HttpServerOptions o;
     o.threads = 4;
     server = std::make_unique<sg::common::HttpServer>("graph-test", o);
-    sg::graph_service::http::register_routes(*server, graph, verifier);
+    sg::graph_service::http::register_routes(*server, graph, verifier, cache);
     port = server->bind_to_any_port();
     thread = std::thread([this] { server->listen(); });
     ASSERT_TRUE(server->wait_until_ready());
@@ -65,6 +66,7 @@ class GraphApiTest : public ::testing::Test {
   sg::common::TokenVerifier verifier{keys.public_key_b64};
   InMemoryGraphRepository repo;
   sg::graph_service::app::GraphService graph{repo};
+  sg::graph_service::http::ReadCache cache;
   std::unique_ptr<sg::common::HttpServer> server;
   int port = 0;
   std::thread thread;
@@ -188,6 +190,28 @@ TEST_F(GraphApiTest, ConnectListAndDisconnect) {
   expect_error(del("/api/v1/me/connections/1", auth()), 404, "not_found");
   expect_error(del("/api/v1/me/connections/abc", auth()), 404, "not_found");
   EXPECT_EQ(repo.version(), 4);
+}
+
+TEST_F(GraphApiTest, CachedReadsFollowOwnWritesAndOtherReplicasEvents) {
+  auto count = [&](std::int64_t id) {
+    return json::parse(get("/api/v1/users/" + std::to_string(id), auth())->body)["connection_count"].get<int>();
+  };
+  EXPECT_EQ(count(1), 1);  // cached now
+  ASSERT_EQ(post("/api/v1/me/connections", R"({"user_id":1})", auth())->status, 201);
+  EXPECT_EQ(count(1), 2) << "this replica invalidates both members after its own write";
+  EXPECT_EQ(json::parse(get("/api/v1/me/connections", auth())->body)["items"].size(), 1U);
+
+  // Another replica connects 1 and 3: the cached profile is stale until graph.events says so.
+  EXPECT_EQ(count(3), 1);
+  repo.put_connection(1, 3, 0.5);
+  EXPECT_EQ(count(3), 1) << "served from the cache";
+  sg::common::StreamEntry entry{"1-1", {{"event_id", "9"}, {"type", "connection.added"}, {"schema", "1"},
+                                        {"occurred_at", "2026-10-19T00:00:00Z"},
+                                        {"payload", R"({"graph_version":9,"user_a":1,"user_b":3,"strength":0.5})"}}};
+  EXPECT_EQ(sg::graph_service::infra::GraphEventsInvalidator::apply(cache, entry), 2);
+  EXPECT_EQ(count(3), 2);
+  EXPECT_EQ(count(1), 3);
+  EXPECT_GT(cache.stats().member_hits, 0U);
 }
 
 TEST_F(GraphApiTest, SnapshotIsInternalAndComplete) {

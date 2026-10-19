@@ -8,7 +8,9 @@ add_library(sg_graph_service_core STATIC
   src/sg/graph_service/domain/profile.cpp
   src/sg/graph_service/domain/taxonomy.cpp
   src/sg/graph_service/domain/user_query.cpp
+  src/sg/graph_service/http/read_cache.cpp
   src/sg/graph_service/http/routes.cpp
+  src/sg/graph_service/infra/graph_events_invalidator.cpp
   src/sg/graph_service/infra/identity_events_consumer.cpp
   src/sg/graph_service/infra/postgres_graph_repository.cpp
   src/sg/graph_service/infra/seed_loader.cpp)

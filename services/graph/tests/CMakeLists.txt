@@ -3,7 +3,8 @@
 add_executable(graph_unit_tests
   app_test.cpp
   domain_test.cpp
-  http_api_test.cpp)
+  http_api_test.cpp
+  read_cache_test.cpp)
 target_link_libraries(graph_unit_tests PRIVATE sg_graph_service_core sg::common_testing GTest::gtest_main)
 sg_set_warnings(graph_unit_tests)
 gtest_discover_tests(graph_unit_tests DISCOVERY_TIMEOUT 60 PROPERTIES LABELS unit)

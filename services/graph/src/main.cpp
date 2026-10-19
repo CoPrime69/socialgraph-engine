@@ -2,6 +2,7 @@
 // Subcommands: serve (default), migrate, seed, healthcheck, --help.
 
 #include <atomic>
+#include <chrono>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -20,7 +21,9 @@
 
 #include "sg/graph_service/app/graph_service.hpp"
 #include "sg/graph_service/config.hpp"
+#include "sg/graph_service/http/read_cache.hpp"
 #include "sg/graph_service/http/routes.hpp"
+#include "sg/graph_service/infra/graph_events_invalidator.hpp"
 #include "sg/graph_service/infra/identity_events_consumer.hpp"
 #include "sg/graph_service/infra/migrations.hpp"
 #include "sg/graph_service/infra/postgres_graph_repository.hpp"
@@ -51,6 +54,8 @@ Environment:
   SEED_DIR                directory with categories/branches/users/connections.csv.gz (default data/stackoverflow)
   CONSUMER_NAME           Redis consumer name in group graph-service (default: host name)
   HTTP_THREADS            request worker threads (default 8)
+  GRAPH_CACHE_ENTRIES     cached profiles and connection lists (default 100000; 0 disables)
+  GRAPH_SEARCH_CACHE_TTL_MS  how long a search page is reused (default 2000; 0 disables)
   DB_POOL_SIZE            PostgreSQL connections (default 8)
   LOG_LEVEL               debug|info|warn|error (default info)
 )";
@@ -102,11 +107,19 @@ int serve(const Config& config) {
   infra::IdentityEventsConsumer consumer(graph, config.redis, consumer_options);
   consumer.start();
 
+  sg::graph_service::http::ReadCacheOptions cache_options;
+  cache_options.member_entries = config.cache_entries;
+  cache_options.search_entries = config.search_cache_ttl_ms > 0 ? 20'000 : 0;
+  cache_options.search_ttl = std::chrono::milliseconds(config.search_cache_ttl_ms);
+  sg::graph_service::http::ReadCache cache(cache_options);
+  infra::GraphEventsInvalidator invalidator(cache, config.redis, {});
+  invalidator.start();
+
   common::HttpServerOptions options;
   options.port = config.port;
   options.threads = config.http_threads;
   common::HttpServer server("graph-service", options);
-  sg::graph_service::http::register_routes(server, graph, verifier);
+  sg::graph_service::http::register_routes(server, graph, verifier, cache);
   server.set_readiness_check([&pool] { return pool.ping(); });
 
   std::atomic<bool> listen_failed{false};
@@ -127,6 +140,7 @@ int serve(const Config& config) {
   server.stop();
   http.join();
   consumer.stop();
+  invalidator.stop();
   relay.stop();
   return listen_failed ? 1 : 0;
 }

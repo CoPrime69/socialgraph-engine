@@ -9,6 +9,7 @@
 
 #include "sg/graph_service/app/graph_service.hpp"
 #include "sg/graph_service/domain/user_query.hpp"
+#include "sg/graph_service/http/read_cache.hpp"
 
 namespace sg::graph_service::http {
 
@@ -25,7 +26,9 @@ namespace sg::graph_service::http {
 /// * `POST   /api/v1/me/connections`            (auth) `{ "user_id": N }` → 201
 /// * `DELETE /api/v1/me/connections/:user_id`   (auth)
 /// * `GET    /internal/v1/snapshot`             (internal network only; never routed by the gateway)
-/// The references must outlive the server.
-void register_routes(sg::common::HttpServer& server, app::GraphService& graph, const sg::common::TokenVerifier& verifier);
+/// Profiles, connection lists and searches are served through `cache`; connect/disconnect
+/// invalidate both members in it. The references must outlive the server.
+void register_routes(sg::common::HttpServer& server, app::GraphService& graph, const sg::common::TokenVerifier& verifier,
+                     ReadCache& cache);
 
 }  // namespace sg::graph_service::http
