@@ -1,0 +1,5 @@
+if(SG_SANITIZE)
+  message(STATUS "Sanitizers enabled: ${SG_SANITIZE}")
+  add_compile_options(-fsanitize=${SG_SANITIZE} -fno-omit-frame-pointer -g)
+  add_link_options(-fsanitize=${SG_SANITIZE})
+endif()
