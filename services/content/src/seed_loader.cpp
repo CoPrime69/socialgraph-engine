@@ -95,7 +95,7 @@ SeedReport load_seed_if_empty(sg::common::PgPool& pool, const std::filesystem::p
       auto q = pqxx::stream_to::raw_table(tx, "questions",
                                           "id, owner_id, created_at, title, score, view_count, answer_count, "
                                           "comment_count, favorite_count, accepted_answer_id, closed_at");
-      std::vector<std::array<std::string, 3>> links;  // question_id, tag_id, position
+      std::vector<std::array<std::string, 5>> links;  // question_id, tag_id, position, score, created_at
       each(directory, "questions",
            {"id", "owner_id", "created_at", "title", "tags", "score", "view_count", "answer_count", "comment_count",
             "favorite_count", "accepted_answer_id", "closed_at"},
@@ -110,15 +110,15 @@ SeedReport load_seed_if_empty(sg::common::PgPool& pool, const std::filesystem::p
                if (end == std::string::npos) end = f[4].size();
                const auto tag = f[4].substr(start, end - start);
                if (auto it = tag_ids.find(tag); it != tag_ids.end()) {
-                 links.push_back({f[0], std::to_string(it->second), std::to_string(position++)});
+                 links.push_back({f[0], std::to_string(it->second), std::to_string(position++), f[5], f[2]});
                }
                start = end + 1;
              }
            });
       q.complete();
       report.questions = static_cast<std::int64_t>(questions.size());
-      auto qt = pqxx::stream_to::raw_table(tx, "question_tags", "question_id, tag_id, position");
-      for (const auto& link : links) qt.write_values(link[0], link[1], link[2]);
+      auto qt = pqxx::stream_to::raw_table(tx, "question_tags", "question_id, tag_id, position, score, created_at");
+      for (const auto& link : links) qt.write_values(link[0], link[1], link[2], link[3], link[4]);
       qt.complete();
       report.question_tags = static_cast<std::int64_t>(links.size());
     }

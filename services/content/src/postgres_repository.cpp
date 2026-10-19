@@ -148,16 +148,33 @@ Page<QuestionSummary> PostgresContentRepository::questions(const QuestionQuery& 
       if (rows.empty()) return page;  // unknown tag: nothing matches
       tag_id = rows[0][0].as<std::int64_t>();
     }
-    const std::string where =
-        " WHERE ($1::integer IS NULL OR q.id IN (SELECT question_id FROM question_tags WHERE tag_id = $1))"
-        " AND ($2::text IS NULL OR q.search @@ websearch_to_tsquery('english', $2))";
-    const char* order =
-        query.sort == QuestionSort::recent ? " ORDER BY q.created_at DESC, q.id DESC" : " ORDER BY q.score DESC, q.id";
-    page.total = tx.exec_params1("SELECT count(*) FROM questions q" + where, tag_id, query.text)[0].as<std::int64_t>();
-    const std::string sql = std::string("SELECT ") + kQuestionColumns + kQuestionTags +
-                            " FROM questions q LEFT JOIN authors au ON au.user_id = q.owner_id" + where + order +
-                            " LIMIT $3 OFFSET $4";
-    for (const auto& r : tx.exec_params(sql, tag_id, query.text, query.limit, query.offset)) {
+    // One statement shape per filter combination (rather than "$1 IS NULL OR ..."), so the planner
+    // sees the real predicate. A tag filter reads question_tags' (tag, sort key) index in order.
+    const bool recent = query.sort == QuestionSort::recent;
+    std::string from = " FROM questions q";
+    std::string where = " WHERE true";
+    std::string order = recent ? " ORDER BY q.created_at DESC, q.id DESC" : " ORDER BY q.score DESC, q.id";
+    pqxx::params params;
+    const auto next = [&params] { return "$" + std::to_string(params.size()); };
+    if (tag_id) {
+      params.append(*tag_id);
+      from = " FROM question_tags qt JOIN questions q ON q.id = qt.question_id";
+      where += " AND qt.tag_id = " + next();
+      order = recent ? " ORDER BY qt.created_at DESC, qt.question_id DESC" : " ORDER BY qt.score DESC, qt.question_id";
+    }
+    if (query.text) {
+      params.append(*query.text);
+      where += " AND q.search @@ websearch_to_tsquery('english', " + next() + ")";
+    }
+    // Counting a tag's questions needs no join with questions (an index-only count).
+    const std::string count_from = tag_id && !query.text ? " FROM question_tags qt" : from;
+    page.total = tx.exec_params1("SELECT count(*)" + count_from + where, params)[0].as<std::int64_t>();
+    params.append(query.limit);
+    std::string sql = std::string("SELECT ") + kQuestionColumns + kQuestionTags + from +
+                      " LEFT JOIN authors au ON au.user_id = q.owner_id" + where + order + " LIMIT " + next();
+    params.append(query.offset);
+    sql += " OFFSET " + next();
+    for (const auto& r : tx.exec_params(sql, params)) {
       page.items.push_back(question_summary(r));
     }
     return page;
