@@ -33,6 +33,13 @@ struct EngineOptions {
   // are coalesced into one recomputation, which bounds the CPU analytics takes from request serving
   // at the cost of up to this much extra staleness.
   std::chrono::milliseconds min_refresh_interval{0};
+  // Two-tier refresh. The global metrics (PageRank, betweenness, closeness, Louvain communities) cost
+  // O(k·E) and take most of a second on the full dataset; recomputing them after every burst of writes
+  // keeps CPU cores busy that should serve requests. Within this interval after a full computation, a
+  // refresh only rebuilds the graph structure and the cheap metrics (adjacency, degree, components,
+  // ranks) and carries the global scores over by user id; a full computation runs once the interval
+  // has passed. 0 = every refresh is full.
+  std::chrono::milliseconds full_refresh_interval{0};
 };
 
 // Serialized responses of one immutable snapshot, keyed by route and canonical parameters. Because
@@ -64,6 +71,9 @@ struct Analytics {
   sg::graph::ComponentsResult components;
   std::string computed_at;
   double compute_ms = 0.0;
+  bool full = true;                       // false: global metrics carried over from an earlier snapshot
+  std::uint64_t centrality_version = 0;   // graph version the global metrics were computed at
+  std::string centrality_computed_at;
   RenderCache rendered;
 
   [[nodiscard]] std::uint64_t version() const { return state->version; }
@@ -74,8 +84,14 @@ struct Analytics {
 
 // Computes all analytics for a graph state. Pure function: no locks, no I/O. Complexity is dominated
 // by Brandes betweenness, O(V·E) exact or O(k·E) sampled.
+//
+// With `carry_from`, only the structure and the cheap metrics are computed (O(V log V + E)); PageRank,
+// betweenness, closeness and community membership are copied from `carry_from` by user id. Users that
+// are new since then score 0 and join the community of their strongest carried-over neighbour (or a
+// community of their own); modularity is re-evaluated for the current graph.
 std::shared_ptr<const Analytics> compute_analytics(std::shared_ptr<const GraphState> state,
-                                                   const EngineOptions& options);
+                                                   const EngineOptions& options,
+                                                   const Analytics* carry_from = nullptr);
 
 // Publishes analytics snapshots of the read model. Reads are a lock-free atomic load of the latest
 // published snapshot.
@@ -110,11 +126,12 @@ class AnalyticsEngine {
     std::uint64_t computations;
     std::uint64_t cache_hits;
     std::uint64_t stale_reads;  // served while a newer read-model version was being computed
+    std::uint64_t full_computations;  // computations that recomputed the global metrics
   };
   [[nodiscard]] Stats stats() const;
 
  private:
-  std::shared_ptr<const Analytics> refresh();
+  std::shared_ptr<const Analytics> refresh(bool force_full = false);
   void refresh_loop(const std::stop_token& stop);
 
   const ReadModel& model_;
@@ -130,6 +147,8 @@ class AnalyticsEngine {
   std::atomic<std::uint64_t> computations_{0};
   std::atomic<std::uint64_t> cache_hits_{0};
   std::atomic<std::uint64_t> stale_reads_{0};
+  std::atomic<std::uint64_t> full_computations_{0};
+  std::atomic<std::chrono::steady_clock::time_point> last_full_{};
 };
 
 }  // namespace sg::analytics

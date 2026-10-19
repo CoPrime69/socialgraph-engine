@@ -53,12 +53,14 @@ sg::common::Handler authenticated(AnalyticsEngine& engine, const sg::common::Tok
 }
 
 // Serves the response for `key` from the snapshot's render cache, rendering it with `render` on a
-// miss. Snapshots are immutable, so (version, key) identifies the body exactly and doubles as a
-// strong ETag: a client revalidating an unchanged view gets 304 with no body.
+// miss. Snapshots are immutable, so (version, centrality version, key) identifies the body exactly
+// and doubles as a strong ETag: a client revalidating an unchanged view gets 304 with no body. (The
+// centrality version distinguishes a snapshot whose global metrics were recomputed at the same
+// graph version from the one that carried them over.)
 template <class Render>
 void cached_json(const httplib::Request& req, httplib::Response& res, const Analytics& a, const std::string& key,
                  Render&& render) {
-  const std::string etag = "\"" + std::to_string(a.version()) + "-" +
+  const std::string etag = "\"" + std::to_string(a.version()) + "-" + std::to_string(a.centrality_version) + "-" +
                            std::to_string(std::hash<std::string>{}(key)) + "\"";
   res.set_header("ETag", etag);
   if (req.get_header_value("If-None-Match") == etag) {
@@ -140,7 +142,9 @@ void register_routes(sg::common::HttpServer& server, const ReadModel& model, Ana
                   {"modularity", a.communities.modularity},
                   {"betweenness_approximate", a.betweenness_approximate},
                   {"computed_at", a.computed_at},
-                  {"compute_ms", a.compute_ms}};
+                  {"compute_ms", a.compute_ms},
+                  {"centrality_graph_version", a.centrality_version},
+                  {"centrality_computed_at", a.centrality_computed_at}};
     });
   }));
 

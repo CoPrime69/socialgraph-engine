@@ -33,6 +33,9 @@ Environment:
   ANALYTICS_MAX_WAIT_MS                  max wait for ?min_version (default 2000)
   ANALYTICS_EAGER_RECOMPUTE              recompute after each event batch (default true)
   ANALYTICS_MIN_REFRESH_MS               min time between background recomputations (default 1000)
+  ANALYTICS_FULL_REFRESH_MS              min time between recomputations of PageRank, betweenness,
+                                         closeness and communities; in between, refreshes carry them
+                                         over (default 30000; 0 = always recompute everything)
   LOG_LEVEL                              debug|info|warn|error (default info)
 )";
 
@@ -59,6 +62,8 @@ int serve() {
       static_cast<std::size_t>(common::env_int("ANALYTICS_BETWEENNESS_SAMPLES", 256, 1, 1'000'000));
   engine_options.min_refresh_interval =
       std::chrono::milliseconds(common::env_int("ANALYTICS_MIN_REFRESH_MS", 1000, 0, 600'000));
+  engine_options.full_refresh_interval =
+      std::chrono::milliseconds(common::env_int("ANALYTICS_FULL_REFRESH_MS", 30'000, 0, 3'600'000));
 
   ReadModel model;
   AnalyticsEngine engine(model, engine_options);

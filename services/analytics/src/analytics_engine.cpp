@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <limits>
 #include <numeric>
 
 namespace sg::analytics {
@@ -47,8 +48,63 @@ void RenderCache::insert(const std::string& key, std::shared_ptr<const std::stri
   if (entries_.size() < kMaxEntries) entries_.try_emplace(key, std::move(body));
 }
 
+namespace {
+
+// Copies the global metrics of `from` into `to` (whose graph is already built) by user id.
+void carry_global_metrics(Analytics& to, const Analytics& from, const std::vector<UserInfo>& users) {
+  const std::size_t n = users.size();
+  for (auto m : {Metric::pagerank, Metric::betweenness, Metric::closeness}) {
+    to.scores[static_cast<std::size_t>(m)].assign(n, 0.0);
+  }
+  to.betweenness_approximate = from.betweenness_approximate;
+  constexpr auto kUnassigned = std::numeric_limits<std::uint32_t>::max();
+  auto& membership = to.communities.membership;
+  membership.assign(n, kUnassigned);
+  std::vector<graph::NodeId> fresh;
+  for (std::size_t i = 0; i < n; ++i) {
+    const auto old = from.node(users[i].id);
+    if (!old) {
+      fresh.push_back(static_cast<graph::NodeId>(i));
+      continue;
+    }
+    for (auto m : {Metric::pagerank, Metric::betweenness, Metric::closeness}) {
+      to.scores[static_cast<std::size_t>(m)][i] = from.metric(m)[*old];
+    }
+    membership[i] = from.communities.membership[*old];
+  }
+  std::uint32_t next_label = static_cast<std::uint32_t>(from.communities.community_count);
+  for (auto v : fresh) {
+    double best = -1.0;
+    std::uint32_t label = kUnassigned;
+    const auto neighbors = to.strength_graph.neighbors(v);
+    const auto weights = to.strength_graph.weights(v);
+    for (std::size_t j = 0; j < neighbors.size(); ++j) {
+      const auto u = neighbors[j];
+      if (membership[u] != kUnassigned && weights[j] > best) {
+        best = weights[j];
+        label = membership[u];
+      }
+    }
+    membership[v] = label != kUnassigned ? label : next_label++;
+  }
+  // Labels stay dense: carried labels are < from.community_count and new ones follow.
+  std::vector<bool> used(next_label, false);
+  for (auto c : membership) used[c] = true;
+  std::vector<std::uint32_t> relabel(next_label, 0);
+  std::uint32_t k = 0;
+  for (std::uint32_t c = 0; c < next_label; ++c) {
+    if (used[c]) relabel[c] = k++;
+  }
+  for (auto& c : membership) c = relabel[c];
+  to.communities.community_count = k;
+  to.communities.levels = from.communities.levels;
+  to.communities.modularity = graph::modularity(to.graph, membership);
+}
+
+}  // namespace
+
 std::shared_ptr<const Analytics> compute_analytics(std::shared_ptr<const GraphState> state,
-                                                   const EngineOptions& options) {
+                                                   const EngineOptions& options, const Analytics* carry_from) {
   const auto started = std::chrono::steady_clock::now();
   auto result = std::make_shared<Analytics>();
   const auto& users = state->users;
@@ -79,20 +135,28 @@ std::shared_ptr<const Analytics> compute_analytics(std::shared_ptr<const GraphSt
   result->graph = graph::CsrGraph::from_edges(n, edges);
   const auto& g = result->graph;
 
-  result->scores[static_cast<std::size_t>(Metric::pagerank)] = graph::pagerank(g).scores;
+  if (carry_from == nullptr) {
+    result->scores[static_cast<std::size_t>(Metric::pagerank)] = graph::pagerank(g).scores;
 
-  graph::BetweennessOptions betweenness_options;
-  betweenness_options.threads = options.threads;
-  if (n > options.exact_betweenness_max_nodes) {
-    betweenness_options.sample_sources = options.betweenness_samples;
+    graph::BetweennessOptions betweenness_options;
+    betweenness_options.threads = options.threads;
+    if (n > options.exact_betweenness_max_nodes) {
+      betweenness_options.sample_sources = options.betweenness_samples;
+    }
+    auto betweenness = graph::betweenness(g, betweenness_options);
+    result->betweenness_approximate = betweenness.approximate;
+    result->scores[static_cast<std::size_t>(Metric::betweenness)] = std::move(betweenness.scores);
+
+    result->scores[static_cast<std::size_t>(Metric::closeness)] = graph::closeness(g, options.threads);
+    result->communities = graph::louvain(g);
+    result->centrality_version = state->version;
+  } else {
+    carry_global_metrics(*result, *carry_from, users);
+    result->full = false;
+    result->centrality_version = carry_from->centrality_version;
+    result->centrality_computed_at = carry_from->centrality_computed_at;
   }
-  auto betweenness = graph::betweenness(g, betweenness_options);
-  result->betweenness_approximate = betweenness.approximate;
-  result->scores[static_cast<std::size_t>(Metric::betweenness)] = std::move(betweenness.scores);
-
-  result->scores[static_cast<std::size_t>(Metric::closeness)] = graph::closeness(g, options.threads);
   result->scores[static_cast<std::size_t>(Metric::degree)] = graph::degree_centrality(g);
-  result->communities = graph::louvain(g);
   result->components = graph::connected_components(g);
 
   for (std::size_t m = 0; m < 4; ++m) {
@@ -109,6 +173,7 @@ std::shared_ptr<const Analytics> compute_analytics(std::shared_ptr<const GraphSt
 
   result->state = std::move(state);
   result->computed_at = sg::common::to_rfc3339(std::chrono::system_clock::now());
+  if (result->full) result->centrality_computed_at = result->computed_at;
   result->compute_ms =
       std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
   return result;
@@ -147,18 +212,28 @@ void AnalyticsEngine::notify_changed() {
 void AnalyticsEngine::refresh_loop(const std::stop_token& stop) {
   auto last = std::chrono::steady_clock::now() - options_.min_refresh_interval;
   while (!stop.stop_requested()) {
+    bool upgrade = false;  // no new writes, but the global metrics are due for a full computation
     {
       std::unique_lock lock(signal_mutex_);
-      changed_.wait(lock, stop, [this] { return dirty_; });
+      const auto snapshot = cache_.load();
+      const bool carried = snapshot && !snapshot->full;
+      if (carried) {
+        const auto due = last_full_.load() + options_.full_refresh_interval;
+        upgrade = !changed_.wait_until(lock, stop, due, [this] { return dirty_; });
+      } else {
+        changed_.wait(lock, stop, [this] { return dirty_; });
+      }
       if (stop.stop_requested()) return;
-      // Coalesce: everything that arrives before the interval has passed goes into one computation.
-      changed_.wait_until(lock, stop, last + options_.min_refresh_interval, [] { return false; });
-      if (stop.stop_requested()) return;
+      if (!upgrade) {
+        // Coalesce: everything that arrives before the interval has passed goes into one computation.
+        changed_.wait_until(lock, stop, last + options_.min_refresh_interval, [] { return false; });
+        if (stop.stop_requested()) return;
+      }
       dirty_ = false;
     }
     last = std::chrono::steady_clock::now();
     try {
-      if (model_.ready()) refresh();
+      if (model_.ready()) refresh(upgrade);
     } catch (const std::exception& e) {
       sg::common::log_error("analytics refresh failed", {{"error", e.what()}});
     }
@@ -198,17 +273,24 @@ std::shared_ptr<const Analytics> AnalyticsEngine::wait_for_version(std::uint64_t
   return latest;
 }
 
-std::shared_ptr<const Analytics> AnalyticsEngine::refresh() {
+std::shared_ptr<const Analytics> AnalyticsEngine::refresh(bool force_full) {
   std::lock_guard lock(compute_mutex_);
   // Another thread may have finished the computation while we waited for the lock.
   auto cached = cache_.load();
   auto state = model_.materialize();
-  if (cached && cached->version() == state->version) {
+  if (cached && cached->version() == state->version && (cached->full || !force_full)) {
     cache_hits_.fetch_add(1, std::memory_order_relaxed);
     return cached;
   }
-  auto fresh = compute_analytics(std::move(state), options_);
+  const auto now = std::chrono::steady_clock::now();
+  const bool full = force_full || !cached || options_.full_refresh_interval.count() <= 0 ||
+                    now - last_full_.load() >= options_.full_refresh_interval;
+  auto fresh = compute_analytics(std::move(state), options_, full ? nullptr : cached.get());
   computations_.fetch_add(1, std::memory_order_relaxed);
+  if (full) {
+    full_computations_.fetch_add(1, std::memory_order_relaxed);
+    last_full_ = now;
+  }
   cache_.store(fresh);
   {
     std::lock_guard signal(signal_mutex_);
@@ -219,7 +301,7 @@ std::shared_ptr<const Analytics> AnalyticsEngine::refresh() {
 
 AnalyticsEngine::Stats AnalyticsEngine::stats() const {
   return {computations_.load(std::memory_order_relaxed), cache_hits_.load(std::memory_order_relaxed),
-          stale_reads_.load(std::memory_order_relaxed)};
+          stale_reads_.load(std::memory_order_relaxed), full_computations_.load(std::memory_order_relaxed)};
 }
 
 }  // namespace sg::analytics

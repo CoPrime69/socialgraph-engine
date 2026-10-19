@@ -198,6 +198,69 @@ TEST(AnalyticsEngine, WaitForVersionTimesOutWithLatestSnapshot) {
   EXPECT_GE(std::chrono::steady_clock::now() - started, std::chrono::milliseconds(50));
 }
 
+TEST(ComputeAnalytics, CarryOverKeepsGlobalMetricsAndUpdatesStructure) {
+  ReadModel model;
+  load_two_cliques(model);
+  const auto full = compute_analytics(model.materialize(), {});
+  ASSERT_TRUE(full->full);
+  EXPECT_EQ(full->centrality_version, 10U);
+
+  // Node 9 joins the first clique and a new member 10 attaches to 9.
+  model.apply(connection_added(11, 9, 1, 0.9));
+  model.apply(testing::user_created(12, testing::make_user(10, "Sales", "sales", 5.0)));
+  model.apply(connection_added(13, 10, 9, 0.4));
+  const auto carried = compute_analytics(model.materialize(), {}, full.get());
+  EXPECT_FALSE(carried->full);
+  EXPECT_EQ(carried->version(), 13U);
+  EXPECT_EQ(carried->centrality_version, 10U) << "global metrics still describe version 10";
+  EXPECT_EQ(carried->centrality_computed_at, full->centrality_computed_at);
+
+  const auto old_1 = *full->node(1);
+  const auto new_1 = *carried->node(1);
+  EXPECT_EQ(carried->metric(Metric::pagerank)[new_1], full->metric(Metric::pagerank)[old_1]);
+  EXPECT_EQ(carried->metric(Metric::betweenness)[new_1], full->metric(Metric::betweenness)[old_1]);
+  const auto ten = *carried->node(10);
+  EXPECT_EQ(carried->metric(Metric::pagerank)[ten], 0.0) << "new members score 0 until the next full run";
+  // Structure is current: degree and components reflect the new edges.
+  EXPECT_GT(carried->metric(Metric::degree)[*carried->node(9)], full->metric(Metric::degree)[*full->node(9)]);
+  EXPECT_EQ(carried->graph.edge_count(), full->graph.edge_count() + 2);
+  // Communities: carried labels stay, the newcomer joins its strongest neighbour's community.
+  const auto& m = carried->communities.membership;
+  EXPECT_EQ(m[new_1], m[*carried->node(2)]);
+  EXPECT_EQ(m[ten], m[*carried->node(9)]);
+  EXPECT_LE(carried->communities.community_count, full->communities.community_count + 1);
+  for (auto c : m) EXPECT_LT(c, carried->communities.community_count);
+}
+
+TEST(AnalyticsEngine, FullRecomputationIsRateLimitedAndCatchesUpWithoutWrites) {
+  ReadModel model;
+  load_two_cliques(model);
+  EngineOptions options;
+  options.full_refresh_interval = std::chrono::milliseconds(300);
+  AnalyticsEngine engine(model, options);
+  ASSERT_TRUE(engine.current()->full);
+  engine.start_background_refresh();
+  const auto fulls = engine.stats().full_computations;
+
+  model.apply(connection_added(11, 9, 1));
+  engine.notify_changed();
+  const auto quick = engine.wait_for_version(11, std::chrono::seconds(5));
+  EXPECT_EQ(quick->version(), 11U);
+  EXPECT_FALSE(quick->full) << "inside the interval only the structure is refreshed";
+  EXPECT_EQ(engine.stats().full_computations, fulls);
+
+  // With no further writes, the refresher still upgrades the snapshot once the interval passed.
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  while (!engine.current()->full && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+  const auto upgraded = engine.current();
+  EXPECT_TRUE(upgraded->full);
+  EXPECT_EQ(upgraded->version(), 11U);
+  EXPECT_EQ(upgraded->centrality_version, 11U);
+  EXPECT_EQ(engine.stats().full_computations, fulls + 1);
+}
+
 TEST(RenderCache, StoresUntilFull) {
   RenderCache cache;
   EXPECT_EQ(cache.find("a"), nullptr);
