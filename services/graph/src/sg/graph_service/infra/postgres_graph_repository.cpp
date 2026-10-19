@@ -27,15 +27,14 @@ constexpr const char* kProfileColumns =
     "extract(epoch FROM p.created_at)::bigint, extract(epoch FROM p.last_access_at)::bigint";
 constexpr int kProfileColumnCount = 16;
 
-constexpr const char* kConnectionCount =
-    "((SELECT count(*) FROM connections c WHERE c.user_a = p.user_id) + "
-    "(SELECT count(*) FROM connections c WHERE c.user_b = p.user_id))";
+// Maintained by triggers on connections (migration 0006).
+constexpr const char* kConnectionCount = "p.connection_count";
 
 // The search filters of GET /users; $1 LIKE pattern for q, $2 category, $3 branch, $4 min_reputation
-// (NULL = no filter). The pattern is lower-cased in SQL so the trigram indexes on lower(handle) and
-// lower(name) apply.
+// (NULL = no filter). The pattern is lower-cased in SQL so the trigram indexes on handle_lower and
+// name_lower apply.
 constexpr const char* kProfileFilters =
-    " WHERE ($1::text IS NULL OR lower(p.handle) LIKE lower($1::text) OR lower(p.name) LIKE lower($1::text))"
+    " WHERE ($1::text IS NULL OR p.handle_lower LIKE lower($1::text) OR p.name_lower LIKE lower($1::text))"
     " AND ($2::text IS NULL OR p.category = $2::text)"
     " AND ($3::text IS NULL OR p.branch = $3::text)"
     " AND ($4::bigint IS NULL OR p.reputation >= $4::bigint)";
@@ -89,7 +88,7 @@ domain::UserProfile read_profile(const pqxx::row& row, int offset = 0) {
 std::string order_by(domain::UserSort sort) {
   switch (sort) {
     case domain::UserSort::name:
-      return " ORDER BY lower(p.name), p.user_id";
+      return " ORDER BY p.name_lower, p.user_id";
     case domain::UserSort::id:
       return " ORDER BY p.user_id";
     case domain::UserSort::reputation:

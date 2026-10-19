@@ -146,6 +146,18 @@ TEST_F(GraphPostgresTest, ConcurrentWritesToOnePairStayConsistentUnderGroupCommi
   });
 }
 
+TEST_F(GraphPostgresTest, StoredConnectionCountsMatchTheConnections) {
+  constexpr const char* kDrift =
+      "SELECT count(*) FROM profiles p WHERE p.connection_count <> "
+      "(SELECT count(*) FROM connections c WHERE c.user_a = p.user_id OR c.user_b = p.user_id)";
+  EXPECT_EQ(scalar<long>(kDrift), 0) << "after the seed import";
+  (void)repo_->add_connection(kDemo, 101, 0.5);
+  (void)repo_->add_connection(kDemo, 102, 0.5);
+  (void)repo_->remove_connection(kDemo, 104);
+  EXPECT_EQ(scalar<long>(kDrift), 0) << "after writes";
+  EXPECT_EQ(repo_->find_profile(kDemo)->connection_count, 21);
+}
+
 TEST_F(GraphPostgresTest, ConcurrentWritesProduceGapFreeCommitOrderedVersions) {
   // 8 writers x 6 connections on distinct pairs, plus concurrent failing writes (duplicates).
   std::atomic<int> failures{0};
