@@ -1,9 +1,18 @@
 #pragma once
 
 /// @file postgres_graph_repository.hpp
-/// GraphRepository on PostgreSQL. All SQL is parameterized. Every write transaction first locks the
-/// graph_meta row (SELECT ... FOR UPDATE) so writers are serialised, then bumps graph_version once if
-/// it changes the graph and enqueues the event carrying that version (contracts §7).
+/// GraphRepository on PostgreSQL. All SQL is parameterized. Every write transaction locks the
+/// graph_meta row (SELECT ... FOR UPDATE) so writers are serialised, then bumps graph_version once
+/// per change and enqueues the event carrying that version (contracts §7).
+///
+/// Connection writes use group commit: callers hand their write to one writer thread, which
+/// applies every write waiting at that moment in a single transaction (one lock, one WAL flush)
+/// and then answers each caller. The serialised section used to cost one disk flush per write;
+/// now it costs one per batch. Business outcomes (already connected, not connected) are detected
+/// without errors, so one write never fails its batch-mates; a database error fails the batch.
+
+#include <cstddef>
+#include <memory>
 
 #include <sg/common/pg.hpp>
 
@@ -13,7 +22,15 @@ namespace sg::graph_service::infra {
 
 class PostgresGraphRepository final : public app::GraphRepository {
  public:
-  explicit PostgresGraphRepository(sg::common::PgPool& pool) : pool_(pool) {}
+  struct Options {
+    std::size_t max_batch = 512;  ///< connection writes per group-commit transaction
+  };
+
+  explicit PostgresGraphRepository(sg::common::PgPool& pool) : PostgresGraphRepository(pool, Options{}) {}
+  PostgresGraphRepository(sg::common::PgPool& pool, Options options);
+  ~PostgresGraphRepository() override;
+  PostgresGraphRepository(const PostgresGraphRepository&) = delete;
+  PostgresGraphRepository& operator=(const PostgresGraphRepository&) = delete;
 
   [[nodiscard]] domain::Taxonomy load_taxonomy() override;
   [[nodiscard]] std::optional<domain::ProfileWithCount> find_profile(std::int64_t user_id) override;
@@ -31,7 +48,10 @@ class PostgresGraphRepository final : public app::GraphRepository {
   [[nodiscard]] std::int64_t graph_version();
 
  private:
+  class GroupCommitWriter;
+
   sg::common::PgPool& pool_;
+  std::unique_ptr<GroupCommitWriter> writer_;
 };
 
 /// Locks the graph_meta row for the rest of `tx` (serialises graph writers) and returns the version.

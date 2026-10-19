@@ -1,6 +1,17 @@
 #include "sg/graph_service/infra/postgres_graph_repository.hpp"
 
+#include <algorithm>
+#include <condition_variable>
+#include <exception>
+#include <future>
+#include <list>
+#include <map>
+#include <mutex>
+#include <optional>
+#include <set>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include <sg/common/errors.hpp>
 #include <sg/common/outbox.hpp>
@@ -179,18 +190,188 @@ domain::ConnectionList PostgresGraphRepository::list_connections(std::int64_t us
   });
 }
 
+// ---------------------------------------------------------------------------------------------
+// Group commit
+
+class PostgresGraphRepository::GroupCommitWriter {
+ public:
+  struct Write {
+    bool add = true;
+    std::int64_t a = 0;  // a < b
+    std::int64_t b = 0;
+    double strength = 0.0;
+  };
+  struct Outcome {
+    bool changed = false;            // inserted / deleted; false: already connected / not connected
+    std::int64_t graph_version = 0;  // the version of this change (when changed)
+    std::int64_t connected_at = 0;   // added connections only
+  };
+
+  GroupCommitWriter(sg::common::PgPool& pool, std::size_t max_batch)
+      : pool_(pool), max_batch_(std::max<std::size_t>(max_batch, 1)), thread_([this](const std::stop_token& stop) { run(stop); }) {}
+
+  ~GroupCommitWriter() {
+    thread_.request_stop();
+    {
+      std::lock_guard lock(mutex_);  // pairs with the wait predicate
+    }
+    wake_.notify_all();
+    thread_.join();
+  }
+
+  GroupCommitWriter(const GroupCommitWriter&) = delete;
+  GroupCommitWriter& operator=(const GroupCommitWriter&) = delete;
+
+  /// Blocks until the batch holding `write` committed (or failed: rethrows its error).
+  Outcome submit(const Write& write) {
+    Pending pending{write, {}};
+    auto done = pending.promise.get_future();
+    {
+      std::lock_guard lock(mutex_);
+      queue_.push_back(&pending);
+    }
+    wake_.notify_one();
+    return done.get();
+  }
+
+ private:
+  struct Pending {
+    Write write;
+    std::promise<Outcome> promise;
+  };
+
+  void run(const std::stop_token& stop) {
+    std::vector<Pending*> batch;
+    std::set<std::pair<std::int64_t, std::int64_t>> pairs;
+    for (;;) {
+      {
+        std::unique_lock lock(mutex_);
+        wake_.wait(lock, [&] { return stop.stop_requested() || !queue_.empty(); });
+        if (queue_.empty()) {
+          return;  // stopping, nothing left to do
+        }
+        // At most one write per pair in a batch, so the set-based statements below need no
+        // ordering within the batch; a second write to the same pair waits for the next batch.
+        for (auto it = queue_.begin(); it != queue_.end() && batch.size() < max_batch_;) {
+          if (pairs.emplace((*it)->write.a, (*it)->write.b).second) {
+            batch.push_back(*it);
+            it = queue_.erase(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+      execute(batch);
+      batch.clear();
+      pairs.clear();
+    }
+  }
+
+  void execute(const std::vector<Pending*>& batch) {
+    std::vector<Outcome> outcomes;
+    try {
+      pool_.with_transaction([&](pqxx::work& tx) {
+        outcomes.assign(batch.size(), Outcome{});
+        std::vector<std::int64_t> add_a, add_b, remove_a, remove_b;
+        std::vector<double> add_strength;
+        for (const auto* p : batch) {
+          if (p->write.add) {
+            add_a.push_back(p->write.a);
+            add_b.push_back(p->write.b);
+            add_strength.push_back(p->write.strength);
+          } else {
+            remove_a.push_back(p->write.a);
+            remove_b.push_back(p->write.b);
+          }
+        }
+        const std::int64_t locked = lock_graph_version(tx);
+        // One statement per kind of write, whatever the batch size: already-connected pairs are
+        // skipped by ON CONFLICT and missing pairs simply return no row.
+        std::map<std::pair<std::int64_t, std::int64_t>, std::int64_t> added;  // pair -> connected_at
+        if (!add_a.empty()) {
+          for (const auto& row : tx.exec_params(
+                   "INSERT INTO connections (user_a, user_b, strength, interactions, origin) "
+                   "SELECT a, b, s, 0, 'member' FROM unnest($1::bigint[], $2::bigint[], $3::float8[]) AS w(a, b, s) "
+                   "ON CONFLICT (user_a, user_b) DO NOTHING "
+                   "RETURNING user_a, user_b, extract(epoch FROM created_at)::bigint",
+                   add_a, add_b, add_strength)) {
+            added.emplace(std::pair{row[0].as<std::int64_t>(), row[1].as<std::int64_t>()}, row[2].as<std::int64_t>());
+          }
+        }
+        std::set<std::pair<std::int64_t, std::int64_t>> removed;
+        if (!remove_a.empty()) {
+          for (const auto& row : tx.exec_params(
+                   "DELETE FROM connections c USING unnest($1::bigint[], $2::bigint[]) AS w(a, b) "
+                   "WHERE c.user_a = w.a AND c.user_b = w.b RETURNING c.user_a, c.user_b",
+                   remove_a, remove_b)) {
+            removed.emplace(row[0].as<std::int64_t>(), row[1].as<std::int64_t>());
+          }
+        }
+        // Versions and events follow the order the writes arrived in.
+        std::int64_t version = locked;
+        std::vector<std::pair<std::string, nlohmann::json>> events;
+        for (std::size_t i = 0; i < batch.size(); ++i) {
+          const Write& w = batch[i]->write;
+          Outcome& out = outcomes[i];
+          if (w.add) {
+            const auto it = added.find({w.a, w.b});
+            if (it == added.end()) {
+              continue;
+            }
+            out.connected_at = it->second;
+            out.graph_version = ++version;
+            events.emplace_back("connection.added", domain::connection_added_payload(version, w.a, w.b, w.strength));
+          } else {
+            if (!removed.contains({w.a, w.b})) {
+              continue;
+            }
+            out.graph_version = ++version;
+            events.emplace_back("connection.removed", domain::connection_removed_payload(version, w.a, w.b));
+          }
+          out.changed = true;
+        }
+        if (version != locked) {
+          sg::common::enqueue_events(tx, events);
+          tx.exec_params("UPDATE graph_meta SET version = $1 WHERE id", version);
+        }
+      });
+    } catch (...) {
+      const auto error = std::current_exception();
+      for (auto* p : batch) {
+        p->promise.set_exception(error);
+      }
+      return;
+    }
+    for (std::size_t i = 0; i < batch.size(); ++i) {
+      batch[i]->promise.set_value(outcomes[i]);
+    }
+  }
+
+  sg::common::PgPool& pool_;
+  const std::size_t max_batch_;
+  std::mutex mutex_;
+  std::condition_variable_any wake_;
+  std::list<Pending*> queue_;
+  std::jthread thread_;  // last: started after everything it uses
+};
+
+PostgresGraphRepository::PostgresGraphRepository(sg::common::PgPool& pool, Options options)
+    : pool_(pool), writer_(std::make_unique<GroupCommitWriter>(pool, options.max_batch)) {}
+
+PostgresGraphRepository::~PostgresGraphRepository() = default;
+
 domain::AddedConnection PostgresGraphRepository::add_connection(std::int64_t user_id, std::int64_t other_id,
                                                                 double strength) {
   const auto [a, b] = domain::ordered(user_id, other_id);
   const double rounded = sg::common::round3(strength);
-  return pool_.with_transaction([&](pqxx::work& tx) {
-    (void)lock_graph_version(tx);
-    const auto profiles = tx.exec_params(std::string("SELECT ") + kProfileColumns +
-                                             " FROM profiles p WHERE p.user_id = $1 OR p.user_id = $2",
-                                         user_id, other_id);
-    std::optional<domain::UserProfile> other;
-    bool caller_exists = false;
-    for (const auto& row : profiles) {
+  // Profiles are never deleted, so checking them before the (serialised) write is safe and keeps
+  // the batch free of failing statements.
+  std::optional<domain::UserProfile> other;
+  bool caller_exists = false;
+  pool_.with_transaction([&](pqxx::work& tx) {
+    for (const auto& row : tx.exec_params(std::string("SELECT ") + kProfileColumns +
+                                               " FROM profiles p WHERE p.user_id = $1 OR p.user_id = $2",
+                                           user_id, other_id)) {
       auto profile = read_profile(row);
       if (profile.id == user_id) {
         caller_exists = true;
@@ -198,46 +379,34 @@ domain::AddedConnection PostgresGraphRepository::add_connection(std::int64_t use
         other = std::move(profile);
       }
     }
-    if (!caller_exists) {
-      throw sg::common::not_found("Profile is still being provisioned, retry shortly");
-    }
-    if (!other) {
-      throw sg::common::not_found("User not found");
-    }
-    const auto inserted = tx.exec_params(
-        "INSERT INTO connections (user_a, user_b, strength, interactions, origin) VALUES ($1, $2, $3, 0, 'member') "
-        "ON CONFLICT (user_a, user_b) DO NOTHING RETURNING extract(epoch FROM created_at)::bigint",
-        a, b, rounded);
-    if (inserted.empty()) {
-      throw sg::common::conflict("Already connected");
-    }
-    const std::int64_t version = bump_graph_version(tx);
-    sg::common::enqueue_event(tx, "connection.added", domain::connection_added_payload(version, a, b, rounded));
-
-    domain::AddedConnection added;
-    added.graph_version = version;
-    added.connection.user = std::move(*other);
-    added.connection.strength = rounded;
-    added.connection.interactions = 0;
-    added.connection.origin = domain::ConnectionOrigin::member;
-    added.connection.connected_at = inserted[0][0].as<std::int64_t>();
-    return added;
   });
+  if (!caller_exists) {
+    throw sg::common::not_found("Profile is still being provisioned, retry shortly");
+  }
+  if (!other) {
+    throw sg::common::not_found("User not found");
+  }
+  const auto outcome = writer_->submit({true, a, b, rounded});
+  if (!outcome.changed) {
+    throw sg::common::conflict("Already connected");
+  }
+  domain::AddedConnection added;
+  added.graph_version = outcome.graph_version;
+  added.connection.user = std::move(*other);
+  added.connection.strength = rounded;
+  added.connection.interactions = 0;
+  added.connection.origin = domain::ConnectionOrigin::member;
+  added.connection.connected_at = outcome.connected_at;
+  return added;
 }
 
 std::int64_t PostgresGraphRepository::remove_connection(std::int64_t user_id, std::int64_t other_id) {
   const auto [a, b] = domain::ordered(user_id, other_id);
-  return pool_.with_transaction([&](pqxx::work& tx) {
-    (void)lock_graph_version(tx);
-    const auto deleted =
-        tx.exec_params("DELETE FROM connections WHERE user_a = $1 AND user_b = $2 RETURNING user_a", a, b);
-    if (deleted.empty()) {
-      throw sg::common::not_found("Not connected to this user");
-    }
-    const std::int64_t version = bump_graph_version(tx);
-    sg::common::enqueue_event(tx, "connection.removed", domain::connection_removed_payload(version, a, b));
-    return version;
-  });
+  const auto outcome = writer_->submit({false, a, b, 0.0});
+  if (!outcome.changed) {
+    throw sg::common::not_found("Not connected to this user");
+  }
+  return outcome.graph_version;
 }
 
 bool PostgresGraphRepository::create_member_profile(const domain::NewMember& member, const std::string& stream,

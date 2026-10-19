@@ -18,6 +18,8 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 #include "sg/common/pqxx.hpp"
@@ -29,6 +31,9 @@ namespace sg::common {
 
 /// Inserts an unpublished event into `outbox` within `tx`; returns its id (the future event_id).
 std::int64_t enqueue_event(pqxx::work& tx, const std::string& type, const nlohmann::json& payload);
+
+/// Inserts several events with one statement, in the given order (ids increase along the vector).
+void enqueue_events(pqxx::work& tx, const std::vector<std::pair<std::string, nlohmann::json>>& events);
 
 /// Background thread that publishes unpublished outbox rows, in id order, to `stream` with XADD
 /// (event_id = outbox id) and then marks them published. Delivery is at-least-once: a crash between

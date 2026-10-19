@@ -53,6 +53,25 @@ std::int64_t enqueue_event(pqxx::work& tx, const std::string& type, const nlohma
   return row[0].as<std::int64_t>();
 }
 
+void enqueue_events(pqxx::work& tx, const std::vector<std::pair<std::string, nlohmann::json>>& events) {
+  if (events.empty()) {
+    return;
+  }
+  std::vector<std::string> types;
+  std::vector<std::string> payloads;
+  types.reserve(events.size());
+  payloads.reserve(events.size());
+  for (const auto& [type, payload] : events) {
+    types.push_back(type);
+    payloads.push_back(payload.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
+  }
+  // Rows draw their ids from the sequence in the ORDER BY order, so outbox order = vector order.
+  tx.exec_params(
+      "INSERT INTO outbox (type, payload) SELECT e.type, e.payload::jsonb "
+      "FROM unnest($1::text[], $2::text[]) WITH ORDINALITY AS e(type, payload, n) ORDER BY e.n",
+      types, payloads);
+}
+
 OutboxRelay::OutboxRelay(PgPool& pool, RedisOptions redis, std::string stream, std::chrono::milliseconds poll_interval)
     : pool_(pool),
       redis_options_(std::move(redis)),

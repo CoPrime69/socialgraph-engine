@@ -106,6 +106,46 @@ TEST_F(GraphPostgresTest, RolledBackWriteLeavesNoOutboxRowAndNoVersionBump) {
   EXPECT_EQ(scalar<long>("SELECT count(*) FROM connections WHERE user_a = 101 AND user_b = 100000000"), 0);
 }
 
+TEST_F(GraphPostgresTest, ConcurrentWritesToOnePairStayConsistentUnderGroupCommit) {
+  // Many threads toggle the same pair: every successful write gets its own version, and the event
+  // stream alternates added/removed exactly like the table did.
+  std::atomic<int> changes{0};
+  std::vector<std::thread> threads;
+  for (int t = 0; t < 8; ++t) {
+    threads.emplace_back([&] {
+      for (int k = 0; k < 10; ++k) {
+        try {
+          (void)repo_->add_connection(kDemo, 101, 0.5);
+          changes.fetch_add(1);
+        } catch (const ApiError& e) {
+          EXPECT_EQ(e.status(), 409);
+        }
+        try {
+          (void)repo_->remove_connection(101, kDemo);
+          changes.fetch_add(1);
+        } catch (const ApiError& e) {
+          EXPECT_EQ(e.status(), 404);
+        }
+      }
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+  EXPECT_EQ(repo_->graph_version(), 1 + changes.load());
+  const auto events = scalar<long>("SELECT count(*) FROM outbox");
+  EXPECT_EQ(events, changes.load());
+  std::string expected = "connection.added";
+  long version = 2;
+  pool_->with_transaction([&](pqxx::work& tx) {
+    for (const auto& row : tx.exec("SELECT type, (payload->>'graph_version')::bigint FROM outbox ORDER BY id")) {
+      EXPECT_EQ(row[0].as<std::string>(), expected);
+      EXPECT_EQ(row[1].as<long>(), version++);
+      expected = expected == "connection.added" ? "connection.removed" : "connection.added";
+    }
+  });
+}
+
 TEST_F(GraphPostgresTest, ConcurrentWritesProduceGapFreeCommitOrderedVersions) {
   // 8 writers x 6 connections on distinct pairs, plus concurrent failing writes (duplicates).
   std::atomic<int> failures{0};
