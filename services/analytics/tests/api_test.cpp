@@ -192,6 +192,33 @@ TEST_F(AnalyticsApiTest, MinVersionWaitsThenReportsStale) {
   EXPECT_EQ(body(fresh)["connections"], 14);
 }
 
+TEST_F(AnalyticsApiTest, ETagRevalidationReturns304) {
+  auto first = get("/api/v1/analytics/influencers?metric=degree&limit=3");
+  ASSERT_EQ(first->status, 200);
+  const auto etag = first->get_header_value("ETag");
+  ASSERT_FALSE(etag.empty());
+  httplib::Headers headers{{"Authorization", "Bearer " + token_}, {"If-None-Match", etag}};
+  auto revalidated = client_->Get("/api/v1/analytics/influencers?metric=degree&limit=3", headers);
+  EXPECT_EQ(revalidated->status, 304);
+  EXPECT_TRUE(revalidated->body.empty());
+  // Same view, different parameters: different entity.
+  auto other = get("/api/v1/analytics/influencers?metric=degree&limit=4");
+  EXPECT_NE(other->get_header_value("ETag"), etag);
+  // A new graph version invalidates the tag.
+  model_.apply(testing::connection_added(11, 9, 1));
+  auto changed = client_->Get("/api/v1/analytics/influencers?metric=degree&limit=3", headers);
+  EXPECT_EQ(changed->status, 200);
+  EXPECT_NE(changed->get_header_value("ETag"), etag);
+}
+
+TEST_F(AnalyticsApiTest, CachedResponsesAreIdentical) {
+  auto a = get("/api/v1/me/recommendations?limit=5");
+  auto b = get("/api/v1/me/recommendations?limit=5");
+  ASSERT_EQ(a->status, 200);
+  EXPECT_EQ(a->body, b->body);
+  EXPECT_EQ(body(a)["items"].size(), body(b)["items"].size());
+}
+
 TEST_F(AnalyticsApiTest, HealthAndReadiness) {
   EXPECT_EQ(client_->Get("/healthz")->status, 200);
   EXPECT_EQ(client_->Get("/readyz")->status, 200);

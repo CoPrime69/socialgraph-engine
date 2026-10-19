@@ -147,5 +147,66 @@ TEST(AnalyticsEngine, ReadersAndWriterRaceSafely) {
   EXPECT_EQ(engine.current()->version(), 60U);
 }
 
+TEST(AnalyticsEngine, BackgroundRefreshServesStaleSnapshotThenCatchesUp) {
+  ReadModel model;
+  load_two_cliques(model);
+  EngineOptions options;
+  options.min_refresh_interval = std::chrono::milliseconds(50);
+  AnalyticsEngine engine(model, options);
+  auto first = engine.current();  // nothing published yet: computed on demand
+  engine.start_background_refresh();
+
+  model.apply(connection_added(11, 9, 1));
+  // Readers are not blocked by the change: they get the published snapshot immediately.
+  EXPECT_EQ(engine.current()->version(), 10U);
+  EXPECT_GE(engine.stats().stale_reads, 1U);
+
+  engine.notify_changed();
+  auto fresh = engine.wait_for_version(11, std::chrono::seconds(5));
+  EXPECT_EQ(fresh->version(), 11U);
+  EXPECT_EQ(engine.current()->version(), 11U);
+  EXPECT_EQ(first->version(), 10U);
+}
+
+TEST(AnalyticsEngine, BackgroundRefreshCoalescesBursts) {
+  ReadModel model;
+  load_two_cliques(model);
+  EngineOptions options;
+  options.min_refresh_interval = std::chrono::milliseconds(200);
+  AnalyticsEngine engine(model, options);
+  (void)engine.current();
+  engine.start_background_refresh();
+  const auto before = engine.stats().computations;
+  for (std::uint64_t v = 11; v < 41; ++v) {
+    model.apply(v % 2 == 1 ? connection_added(v, 9, 1) : testing::connection_removed(v, 9, 1));
+    engine.notify_changed();
+  }
+  EXPECT_EQ(engine.wait_for_version(40, std::chrono::seconds(5))->version(), 40U);
+  // 30 changes inside the refresh window: far fewer than 30 recomputations.
+  EXPECT_LE(engine.stats().computations - before, 3U);
+}
+
+TEST(AnalyticsEngine, WaitForVersionTimesOutWithLatestSnapshot) {
+  ReadModel model;
+  load_two_cliques(model);
+  AnalyticsEngine engine(model, {});
+  (void)engine.current();
+  engine.start_background_refresh();
+  const auto started = std::chrono::steady_clock::now();
+  auto latest = engine.wait_for_version(99, std::chrono::milliseconds(50));
+  EXPECT_EQ(latest->version(), 10U);
+  EXPECT_GE(std::chrono::steady_clock::now() - started, std::chrono::milliseconds(50));
+}
+
+TEST(RenderCache, StoresUntilFull) {
+  RenderCache cache;
+  EXPECT_EQ(cache.find("a"), nullptr);
+  cache.insert("a", std::make_shared<const std::string>("{}"));
+  ASSERT_NE(cache.find("a"), nullptr);
+  EXPECT_EQ(*cache.find("a"), "{}");
+  cache.insert("a", std::make_shared<const std::string>("[]"));  // first value wins
+  EXPECT_EQ(*cache.find("a"), "{}");
+}
+
 }  // namespace
 }  // namespace sg::analytics

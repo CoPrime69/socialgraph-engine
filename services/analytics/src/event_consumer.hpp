@@ -26,7 +26,7 @@ class EventConsumer {
  public:
   struct Options {
     std::string stream = "graph.events";
-    bool eager_recompute = true;  // warm the analytics cache after each batch instead of on first read
+    bool eager_recompute = true;  // tell the engine after each batch instead of waiting for a read
   };
 
   EventConsumer(ReadModel& model, AnalyticsEngine& engine, SnapshotFetcher fetch_snapshot,

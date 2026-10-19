@@ -93,7 +93,7 @@ void EventConsumer::run(const std::stop_token& stop) {
         continue;
       }
       backoff = 200ms;
-      if (options_.eager_recompute) engine_.current();
+      if (options_.eager_recompute) engine_.notify_changed();
     }
 
     try {
@@ -121,7 +121,7 @@ void EventConsumer::run(const std::stop_token& stop) {
           break;
         }
       }
-      if (changed && bootstrapped && options_.eager_recompute) engine_.current();
+      if (changed && bootstrapped && options_.eager_recompute) engine_.notify_changed();
       backoff = 200ms;
     } catch (const std::exception& e) {
       log_warn("event stream read failed", {{"error", e.what()}});

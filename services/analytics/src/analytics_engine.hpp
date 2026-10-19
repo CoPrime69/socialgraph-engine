@@ -6,11 +6,16 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <shared_mutex>
+#include <stop_token>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -24,6 +29,24 @@ struct EngineOptions {
   unsigned threads = 0;                             // 0 = hardware concurrency
   std::size_t exact_betweenness_max_nodes = 5000;   // above this, Brandes runs on sampled pivots
   std::size_t betweenness_samples = 256;
+  // Background refresh: minimum time between two recomputations. Bursts of writes inside this window
+  // are coalesced into one recomputation, which bounds the CPU analytics takes from request serving
+  // at the cost of up to this much extra staleness.
+  std::chrono::milliseconds min_refresh_interval{0};
+};
+
+// Serialized responses of one immutable snapshot, keyed by route and canonical parameters. Because
+// the snapshot never changes, an entry can never go stale; it is dropped together with the snapshot
+// when a newer version is published. Bounded: once full, further responses are simply not cached.
+class RenderCache {
+ public:
+  static constexpr std::size_t kMaxEntries = 65536;
+  [[nodiscard]] std::shared_ptr<const std::string> find(const std::string& key) const;
+  void insert(const std::string& key, std::shared_ptr<const std::string> body) const;
+
+ private:
+  mutable std::shared_mutex mutex_;
+  mutable std::unordered_map<std::string, std::shared_ptr<const std::string>> entries_;
 };
 
 // Everything derived from one GraphState. Immutable once built, shared between request threads.
@@ -31,7 +54,8 @@ struct Analytics {
   std::shared_ptr<const GraphState> state;
   std::unordered_map<std::int64_t, sg::graph::NodeId> node_of;  // user id -> dense node index
   std::vector<sg::graph::Profile> profiles;
-  sg::graph::CsrGraph graph;  // weights = louvain_weight(strength)
+  sg::graph::CsrGraph graph;           // weights = louvain_weight(strength)
+  sg::graph::CsrGraph strength_graph;  // same topology, weights = connection strength (for output)
   std::array<std::vector<double>, 4> scores;          // indexed by Metric
   std::array<std::vector<std::uint32_t>, 4> ranks;    // 1-based rank per node, indexed by Metric
   std::array<std::vector<sg::graph::NodeId>, 4> order; // nodes sorted by rank, indexed by Metric
@@ -40,6 +64,7 @@ struct Analytics {
   sg::graph::ComponentsResult components;
   std::string computed_at;
   double compute_ms = 0.0;
+  RenderCache rendered;
 
   [[nodiscard]] std::uint64_t version() const { return state->version; }
   [[nodiscard]] std::optional<sg::graph::NodeId> node(std::int64_t user_id) const;
@@ -52,29 +77,59 @@ struct Analytics {
 std::shared_ptr<const Analytics> compute_analytics(std::shared_ptr<const GraphState> state,
                                                    const EngineOptions& options);
 
-// Caches the analytics of the latest read-model version. The first request after a change computes
-// (single-flight: concurrent callers wait for that one computation); every later request for the
-// same version is a lock-free atomic load.
+// Publishes analytics snapshots of the read model. Reads are a lock-free atomic load of the latest
+// published snapshot.
+//
+// Without background refresh, the first read after a change computes the new snapshot (single-flight:
+// concurrent callers wait for that one computation). With start_background_refresh(), requests never
+// wait for a computation: they are served the latest published snapshot (stale-while-revalidate) while
+// a background thread recomputes whenever the read model moves on, coalescing bursts of writes.
+// Callers that need their own write reflected use wait_for_version().
 class AnalyticsEngine {
  public:
   AnalyticsEngine(const ReadModel& model, EngineOptions options);
+  ~AnalyticsEngine();
+  AnalyticsEngine(const AnalyticsEngine&) = delete;
+  AnalyticsEngine& operator=(const AnalyticsEngine&) = delete;
 
-  // Throws sg::common::ApiError(503) until the read model has been bootstrapped.
+  void start_background_refresh();
+  void stop();
+
+  // Tells the engine the read model changed: wakes the background refresher, or recomputes now when
+  // there is none.
+  void notify_changed();
+
+  // Latest snapshot. Throws sg::common::ApiError(503) until the read model has been bootstrapped.
   std::shared_ptr<const Analytics> current();
+
+  // A snapshot of at least `version`, waiting up to `timeout` for it to be published; returns the
+  // latest snapshot (possibly older) when the wait times out.
+  std::shared_ptr<const Analytics> wait_for_version(std::uint64_t version, std::chrono::milliseconds timeout);
 
   struct Stats {
     std::uint64_t computations;
     std::uint64_t cache_hits;
+    std::uint64_t stale_reads;  // served while a newer read-model version was being computed
   };
   [[nodiscard]] Stats stats() const;
 
  private:
+  std::shared_ptr<const Analytics> refresh();
+  void refresh_loop(const std::stop_token& stop);
+
   const ReadModel& model_;
   EngineOptions options_;
   std::atomic<std::shared_ptr<const Analytics>> cache_;
   std::mutex compute_mutex_;
+  std::mutex signal_mutex_;
+  std::condition_variable_any changed_;    // read model moved on (wakes the refresher)
+  std::condition_variable_any published_;  // a new snapshot was published (wakes waiters)
+  bool dirty_ = false;
+  std::atomic<bool> background_{false};
+  std::jthread refresher_;
   std::atomic<std::uint64_t> computations_{0};
   std::atomic<std::uint64_t> cache_hits_{0};
+  std::atomic<std::uint64_t> stale_reads_{0};
 };
 
 }  // namespace sg::analytics

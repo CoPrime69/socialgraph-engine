@@ -32,6 +32,7 @@ Environment:
   ANALYTICS_BETWEENNESS_SAMPLES          pivots for sampled betweenness (default 256)
   ANALYTICS_MAX_WAIT_MS                  max wait for ?min_version (default 2000)
   ANALYTICS_EAGER_RECOMPUTE              recompute after each event batch (default true)
+  ANALYTICS_MIN_REFRESH_MS               min time between background recomputations (default 1000)
   LOG_LEVEL                              debug|info|warn|error (default info)
 )";
 
@@ -56,9 +57,12 @@ int serve() {
       static_cast<std::size_t>(common::env_int("ANALYTICS_EXACT_BETWEENNESS_MAX_NODES", 5000, 0, 100'000'000));
   engine_options.betweenness_samples =
       static_cast<std::size_t>(common::env_int("ANALYTICS_BETWEENNESS_SAMPLES", 256, 1, 1'000'000));
+  engine_options.min_refresh_interval =
+      std::chrono::milliseconds(common::env_int("ANALYTICS_MIN_REFRESH_MS", 1000, 0, 600'000));
 
   ReadModel model;
   AnalyticsEngine engine(model, engine_options);
+  engine.start_background_refresh();
 
   common::HttpServerOptions http_options;
   http_options.port = port();
@@ -86,6 +90,7 @@ int serve() {
   common::log_info("shutting down", {{"signal", signal}});
   server.stop();
   consumer.stop();
+  engine.stop();
   return 0;
 }
 
