@@ -1,0 +1,4 @@
+id,post_id,user_id,created_at,score,text
+1001,1,10,2008-08-05T10:30:00Z,2,Which runtime?
+1002,101,20,2008-08-05T11:30:00Z,0,"Thanks, that worked"
+1003,999999,10,2008-08-05T11:30:00Z,0,Comment on a post outside the dataset

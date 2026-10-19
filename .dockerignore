@@ -1,0 +1,9 @@
+.git
+build
+**/node_modules
+**/dist
+**/coverage
+frontend/playwright-report
+frontend/test-results
+legacy
+deploy/.env

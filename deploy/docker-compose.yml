@@ -1,0 +1,126 @@
+# Production-like stack: gateway (SPA + API routing), four C++ services, PostgreSQL, Redis.
+#   ./scripts/generate-env.sh            # once: writes deploy/.env with random secrets and keys
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+#   open http://localhost:8080
+name: socialgraph
+
+x-cpp-build: &cpp-build
+  context: ..
+  dockerfile: deploy/cpp.Dockerfile
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  environment: &common-env
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    HTTP_THREADS: ${HTTP_THREADS:-8}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/generate-env.sh}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?}
+      GRAPH_DB_PASSWORD: ${GRAPH_DB_PASSWORD:?}
+      CONTENT_DB_PASSWORD: ${CONTENT_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -tAc \"select 1 from pg_database where datname='content'\" | grep -q 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  identity:
+    <<: *service-defaults
+    build: { <<: *cpp-build, target: identity-service }
+    image: socialgraph/identity-service:local
+    environment:
+      <<: *common-env
+      IDENTITY_PORT: "8081"
+      IDENTITY_DATABASE_URL: postgresql://identity_svc:${IDENTITY_DB_PASSWORD}@postgres:5432/identity
+      AUTH_SIGNING_SEED: ${AUTH_SIGNING_SEED:?}
+      AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-28800}
+      PASSWORD_HASH_PROFILE: owasp
+      SEED_ON_EMPTY: ${SEED_ON_EMPTY:-true}
+      SEED_DIR: /data/stackoverflow
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:?}
+      GRAPH_SERVICE_URL: http://graph:8082
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      graph: { condition: service_healthy }
+
+  graph:
+    <<: *service-defaults
+    build: { <<: *cpp-build, target: graph-service }
+    image: socialgraph/graph-service:local
+    environment:
+      <<: *common-env
+      GRAPH_PORT: "8082"
+      GRAPH_DATABASE_URL: postgresql://graph_svc:${GRAPH_DB_PASSWORD}@postgres:5432/graph
+      AUTH_PUBLIC_KEY: ${AUTH_PUBLIC_KEY:?}
+      SEED_ON_EMPTY: ${SEED_ON_EMPTY:-true}
+      SEED_DIR: /data/stackoverflow
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  analytics:
+    <<: *service-defaults
+    build: { <<: *cpp-build, target: analytics-service }
+    image: socialgraph/analytics-service:local
+    environment:
+      <<: *common-env
+      ANALYTICS_PORT: "8083"
+      AUTH_PUBLIC_KEY: ${AUTH_PUBLIC_KEY:?}
+      GRAPH_SERVICE_URL: http://graph:8082
+    depends_on:
+      graph: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  content:
+    <<: *service-defaults
+    build: { <<: *cpp-build, target: content-service }
+    image: socialgraph/content-service:local
+    environment:
+      <<: *common-env
+      CONTENT_PORT: "8084"
+      CONTENT_DATABASE_URL: postgresql://content_svc:${CONTENT_DB_PASSWORD}@postgres:5432/content
+      AUTH_PUBLIC_KEY: ${AUTH_PUBLIC_KEY:?}
+      SEED_ON_EMPTY: ${SEED_ON_EMPTY:-true}
+      SEED_DIR: /data/stackoverflow
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  gateway:
+    build: { context: .., dockerfile: gateway/Dockerfile }
+    image: socialgraph/gateway:local
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      identity: { condition: service_healthy }
+      graph: { condition: service_healthy }
+      analytics: { condition: service_healthy }
+      content: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  redisdata:

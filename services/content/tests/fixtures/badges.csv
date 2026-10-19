@@ -1,0 +1,5 @@
+id,user_id,name,class,tag_based,awarded_at
+1,10,Teacher,3,false,2008-09-15T08:55:03Z
+2,10,c#,1,true,2009-05-01T00:00:00Z
+3,20,Student,3,false,2008-08-10T00:00:00Z
+4,777,Ghost,3,false,2008-08-10T00:00:00Z
