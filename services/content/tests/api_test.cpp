@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 #include <httplib.h>
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -59,6 +60,7 @@ class FakeRepository : public ContentRepository {
   }
 
   std::optional<QuestionDetail> question(std::int64_t id) override {
+    ++question_calls;
     if (id != 42) return std::nullopt;
     QuestionDetail d;
     d.question = summary(42);
@@ -76,6 +78,7 @@ class FakeRepository : public ContentRepository {
             .answer_count = 2, .created_at = "2008-08-04T09:30:00Z", .owner = AuthorRef{10, "Alice"}};
   }
 
+  std::atomic<int> question_calls{0};
   std::mutex mutex_;
   std::optional<std::string> last_prefix;
   QuestionQuery last_query;
@@ -232,6 +235,27 @@ TEST_F(ContentApiTest, QuestionDetail) {
   EXPECT_TRUE(b["answers"][1]["owner"].is_null()) << "deleted users have no owner";
 
   expect_error("/api/v1/questions/7", 404, "not_found");
+}
+
+TEST_F(ContentApiTest, RepeatedReadsAreServedFromCache) {
+  ASSERT_EQ(get("/api/v1/questions/42")->status, 200);
+  ASSERT_EQ(get("/api/v1/questions/42")->status, 200);
+  EXPECT_EQ(repository_.question_calls.load(), 1) << "second read must not reach the repository";
+  // Misses (404) are not cached.
+  EXPECT_EQ(get("/api/v1/questions/7")->status, 404);
+  EXPECT_EQ(get("/api/v1/questions/7")->status, 404);
+  EXPECT_EQ(repository_.question_calls.load(), 3);
+}
+
+TEST_F(ContentApiTest, ETagRevalidationReturns304) {
+  auto first = get("/api/v1/questions/42");
+  const auto etag = first->get_header_value("ETag");
+  ASSERT_FALSE(etag.empty());
+  auto again = client_->Get("/api/v1/questions/42", {{"Authorization", "Bearer " + token_}, {"If-None-Match", etag}});
+  EXPECT_EQ(again->status, 304);
+  EXPECT_TRUE(again->body.empty());
+  auto stale = client_->Get("/api/v1/questions/42", {{"Authorization", "Bearer " + token_}, {"If-None-Match", "\"0\""}});
+  EXPECT_EQ(stale->status, 200);
 }
 
 }  // namespace

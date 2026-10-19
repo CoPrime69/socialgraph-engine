@@ -35,6 +35,7 @@ Environment:
   HTTP_THREADS            request worker threads (default 8)
   SEED_ON_EMPTY           import SEED_DIR when the database is empty (default false)
   SEED_DIR                dataset directory (default data/stackoverflow)
+  CONTENT_CACHE_ENTRIES   rendered responses kept in memory (default 50000, 0 disables)
   LOG_LEVEL               debug|info|warn|error (default info)
 )";
 
@@ -81,7 +82,10 @@ int serve() {
   options.port = port();
   options.threads = static_cast<std::size_t>(common::env_int("HTTP_THREADS", 8, 1, 512));
   common::HttpServer server("content-service", options);
-  sg::content::register_routes(server, repository, verifier);
+  sg::content::ApiOptions api_options;
+  api_options.cache_entries =
+      static_cast<std::size_t>(common::env_int("CONTENT_CACHE_ENTRIES", 50'000, 0, 10'000'000));
+  sg::content::register_routes(server, repository, verifier, api_options);
   server.set_readiness_check([&repository] { return repository.ping(); });
 
   std::jthread http([&server] { server.listen(); });

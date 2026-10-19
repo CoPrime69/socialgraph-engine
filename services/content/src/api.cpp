@@ -1,9 +1,12 @@
 #include "api.hpp"
 
 #include <sg/common/errors.hpp>
+#include <sg/common/lru_cache.hpp>
 
 #include <algorithm>
 #include <cctype>
+#include <functional>
+#include <memory>
 
 namespace sg::content {
 
@@ -45,6 +48,32 @@ std::optional<std::string> text_param(const httplib::Request& req, const std::st
     throw sg::common::bad_request("Query parameter '" + name + "' contains control characters");
   }
   return trimmed;
+}
+
+struct Rendered {
+  std::string body;
+  std::string etag;
+};
+using ResponseCache = sg::common::LruCache<std::string, std::shared_ptr<const Rendered>>;
+
+// Cache-aside over rendered JSON: a hit skips PostgreSQL and serialization entirely. The strong
+// ETag is derived from the body, so clients revalidating an unchanged response get 304.
+template <class Render>
+void cached_json(const httplib::Request& req, httplib::Response& res, ResponseCache* cache, const std::string& key,
+                 Render&& render) {
+  auto make = [&] {
+    auto body = render().dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+    auto etag = "\"" + std::to_string(std::hash<std::string>{}(body)) + "\"";
+    return std::make_shared<const Rendered>(Rendered{std::move(body), std::move(etag)});
+  };
+  const auto rendered = cache ? cache->get_or_load(key, make) : make();
+  res.set_header("ETag", rendered->etag);
+  if (req.get_header_value("If-None-Match") == rendered->etag) {
+    res.status = 304;
+    return;
+  }
+  res.status = 200;
+  res.set_content(rendered->body, "application/json; charset=utf-8");
 }
 
 template <class Body>
@@ -120,24 +149,33 @@ json to_json(const QuestionDetail& d) {
 }
 
 void register_routes(sg::common::HttpServer& server, ContentRepository& repository,
-                     const sg::common::TokenVerifier& verifier) {
-  server.get("/api/v1/users/:id/activity", authenticated(verifier, [&repository](const auto& req, auto& res) {
-               sg::common::write_json(res, 200, to_json(repository.activity(sg::common::path_id(req, "id"))));
+                     const sg::common::TokenVerifier& verifier, ApiOptions options) {
+  // Shared by every handler; lives as long as the routes do.
+  std::shared_ptr<ResponseCache> cache =
+      options.cache_entries > 0 ? std::make_shared<ResponseCache>(options.cache_entries) : nullptr;
+
+  server.get("/api/v1/users/:id/activity", authenticated(verifier, [&repository, cache](const auto& req, auto& res) {
+               const auto id = sg::common::path_id(req, "id");
+               cached_json(req, res, cache.get(), "activity:" + std::to_string(id),
+                           [&] { return to_json(repository.activity(id)); });
              }));
 
-  server.get("/api/v1/tags", authenticated(verifier, [&repository](const auto& req, auto& res) {
+  server.get("/api/v1/tags", authenticated(verifier, [&repository, cache](const auto& req, auto& res) {
                const auto prefix = text_param(req, "q");
                const auto limit = query_int(req, "limit", 20, 1, 100);
                const auto offset = query_int(req, "offset", 0, 0, 1'000'000);
-               const auto page = repository.tags(prefix, limit, offset);
-               sg::common::write_json(res, 200, page_json(page, [](const TagInfo& t) {
-                                        return json{{"name", t.name},
-                                                    {"question_count", t.question_count},
-                                                    {"category", t.category ? json(*t.category) : json(nullptr)}};
-                                      }));
+               const auto key = "tags:" + std::to_string(limit) + ":" + std::to_string(offset) + ":" + prefix.value_or("");
+               cached_json(req, res, cache.get(), key, [&] {
+                 const auto page = repository.tags(prefix, limit, offset);
+                 return page_json(page, [](const TagInfo& t) {
+                   return json{{"name", t.name},
+                               {"question_count", t.question_count},
+                               {"category", t.category ? json(*t.category) : json(nullptr)}};
+                 });
+               });
              }));
 
-  server.get("/api/v1/questions", authenticated(verifier, [&repository](const auto& req, auto& res) {
+  server.get("/api/v1/questions", authenticated(verifier, [&repository, cache](const auto& req, auto& res) {
                QuestionQuery query;
                query.tag = text_param(req, "tag");
                query.text = text_param(req, "q");
@@ -149,14 +187,25 @@ void register_routes(sg::common::HttpServer& server, ContentRepository& reposito
                }
                query.limit = query_int(req, "limit", 20, 1, 100);
                query.offset = query_int(req, "offset", 0, 0, 1'000'000);
-               const auto page = repository.questions(query);
-               sg::common::write_json(res, 200, page_json(page, [](const QuestionSummary& q) { return to_json(q); }));
+               // Length-prefixed fields: no tag/text value can be crafted to collide with another key.
+               const auto field = [](const std::optional<std::string>& v) {
+                 return v ? std::to_string(v->size()) + ":" + *v : std::string("-");
+               };
+               const auto key = "questions:" + sort + ":" + std::to_string(query.limit) + ":" +
+                                std::to_string(query.offset) + ":" + field(query.tag) + ":" + field(query.text);
+               cached_json(req, res, cache.get(), key, [&] {
+                 const auto page = repository.questions(query);
+                 return page_json(page, [](const QuestionSummary& q) { return to_json(q); });
+               });
              }));
 
-  server.get("/api/v1/questions/:id", authenticated(verifier, [&repository](const auto& req, auto& res) {
-               auto detail = repository.question(sg::common::path_id(req, "id"));
-               if (!detail) throw sg::common::not_found("Question not found");
-               sg::common::write_json(res, 200, to_json(*detail));
+  server.get("/api/v1/questions/:id", authenticated(verifier, [&repository, cache](const auto& req, auto& res) {
+               const auto id = sg::common::path_id(req, "id");
+               cached_json(req, res, cache.get(), "question:" + std::to_string(id), [&] {
+                 auto detail = repository.question(id);
+                 if (!detail) throw sg::common::not_found("Question not found");
+                 return to_json(*detail);
+               });
              }));
 }
 
