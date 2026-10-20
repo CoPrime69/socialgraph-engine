@@ -32,7 +32,7 @@ describe('field rules (contracts §3)', () => {
     expect(normalizeHandle('  Ada_Member ')).toBe('ada_member');
     expect(validateHandle('Ada_Member')).toBeUndefined();
     expect(validateHandle('')).toBe('Enter a handle.');
-    expect(validateHandle('ab')).toMatch(/3–32 characters/);
+    expect(validateHandle('ab')).toMatch(/3-32 characters/);
     expect(validateHandle('ada-member')).toMatch(/lowercase letters, numbers or underscores/);
     expect(validateHandle('a'.repeat(33))).toBeDefined();
   });

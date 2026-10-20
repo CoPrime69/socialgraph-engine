@@ -71,7 +71,7 @@ describe('People', () => {
     );
     const { user, router, table } = await openPeople();
     const pagination = screen.getByRole('navigation', { name: 'Pagination' });
-    expect(pagination).toHaveTextContent('Showing 1–20 of 45 people');
+    expect(pagination).toHaveTextContent('Showing 1-20 of 45 people');
     expect(within(pagination).getByRole('button', { name: 'Previous' })).toBeDisabled();
 
     await user.click(within(pagination).getByRole('button', { name: 'Next' }));

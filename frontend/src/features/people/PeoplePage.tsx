@@ -24,7 +24,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 const SORTS: readonly { value: UserSort; label: string }[] = [
   { value: 'reputation', label: 'Reputation (highest first)' },
-  { value: 'name', label: 'Name (A–Z)' },
+  { value: 'name', label: 'Name (A-Z)' },
   { value: 'id', label: 'Account id (oldest first)' },
 ];
 
@@ -182,7 +182,7 @@ export function PeoplePage() {
                   <span className={styles.category}>{person.category}</span>
                 </td>
                 <td role="cell" data-label="Location" className={styles.location}>
-                  {person.location ?? <span className={table.muted}>—</span>}
+                  {person.location ?? <span className={table.muted}>Not listed</span>}
                 </td>
                 <td role="cell" data-label="Reputation" className={table.numeric}>
                   <span className={styles.reputation}>{formatInteger(person.reputation)}</span>
@@ -224,7 +224,7 @@ export function PeoplePage() {
             <TextField
               label="Search"
               type="search"
-              placeholder="Name or handle"
+              placeholder="Name or handle…"
               autoComplete="off"
               spellCheck={false}
               value={term}

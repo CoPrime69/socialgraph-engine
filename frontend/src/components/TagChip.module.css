@@ -1,9 +1,9 @@
-/* Topic tags keep the look Stack Overflow gave them in 2008: square, pale blue, a darker edge. */
+/* Topic tags keep the look Stack Overflow gave them in 2008: pale blue with a darker edge. */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   border-right: 1px solid var(--color-tag-edge);
   border-bottom: 1px solid var(--color-tag-edge);
   background: var(--color-tag);

@@ -152,7 +152,7 @@ export function RegisterPage() {
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          hint="3–32 lowercase letters, numbers or underscores. Used to sign in."
+          hint="3-32 lowercase letters, numbers or underscores. Used to sign in."
           value={values.handle}
           onChange={(event) => {
             update('handle', event.target.value.toLowerCase());

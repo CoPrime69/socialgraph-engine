@@ -62,7 +62,7 @@ describe('Registration', () => {
     const handle = screen.getByLabelText('Handle');
     expect(handle).toHaveValue('grace-hopper');
     expect(handle).toHaveAccessibleDescription(
-      expect.stringContaining('Use 3–32 characters: lowercase letters, numbers or underscores.'),
+      expect.stringContaining('Use 3-32 characters: lowercase letters, numbers or underscores.'),
     );
     expect(handle).toHaveFocus();
     expect(screen.getByLabelText('Display name')).toHaveAccessibleDescription('Enter your name.');

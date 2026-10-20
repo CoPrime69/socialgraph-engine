@@ -21,7 +21,7 @@ describe('User profile', () => {
   it('shows who the person is, with reputation first', async () => {
     await openJonSkeet();
     expect(screen.getByText('Stack Overflow user')).toBeInTheDocument();
-    expect(screen.getByText('@jon_skeet_22656 · c# · .NET & Windows')).toBeInTheDocument();
+    expect(screen.getByText('@jon_skeet_22656 · c#, .NET & Windows')).toBeInTheDocument();
     expect(screen.getByText('1,457,162')).toBeInTheDocument();
     expect(screen.getByText('100th percentile')).toBeInTheDocument();
     expect(document.title).toBe('Jon Skeet · SocialGraph');
@@ -102,7 +102,7 @@ describe('User profile', () => {
     const totals = await within(card).findByLabelText('Activity totals');
     expect(within(totals).getByText('Answers').nextElementSibling).toHaveTextContent('2,918');
     expect(within(totals).getByText('1,340 accepted · score 61,350')).toBeInTheDocument();
-    expect(within(totals).getByText('24 gold · 482 silver · 1,008 bronze')).toBeInTheDocument();
+    expect(within(totals).getByText('24 gold, 482 silver, 1,008 bronze')).toBeInTheDocument();
 
     const tags = within(card).getByRole('region', { name: 'Top tags' });
     const csharp = within(tags).getByRole('link', { name: 'c# 697 posts' });

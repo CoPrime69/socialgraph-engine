@@ -44,8 +44,8 @@ describe('Overview', () => {
       '99.6%',
     );
     expect(within(tiles).getByText('18,571 people · 37 separate groups')).toBeInTheDocument();
-    expect(screen.getByText(/Graph version 41 · analytics computed/)).toHaveTextContent(
-      /in 2,840 ms$/,
+    expect(screen.getByText(/Graph version 41\. Analytics computed/)).toHaveTextContent(
+      /in 2,840 ms\.$/,
     );
   });
 

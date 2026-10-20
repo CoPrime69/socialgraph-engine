@@ -18,25 +18,25 @@ import {
 describe('number formatting', () => {
   it('formats integers, decimals and percentages', () => {
     expect(formatInteger(18649)).toBe('18,649');
-    expect(formatInteger(Number.NaN)).toBe('–');
+    expect(formatInteger(Number.NaN)).toBe('n/a');
     expect(formatDecimal(0.47123, 2)).toBe('0.47');
-    expect(formatDecimal(Number.POSITIVE_INFINITY, 2)).toBe('–');
+    expect(formatDecimal(Number.POSITIVE_INFINITY, 2)).toBe('n/a');
     expect(formatPercent(0.7234)).toBe('72%');
     expect(formatPercent(0.99567, 1)).toBe('99.6%');
-    expect(formatPercent(Number.NaN)).toBe('–');
+    expect(formatPercent(Number.NaN)).toBe('n/a');
   });
 
   it('compacts only large figures', () => {
     expect(formatCompact(18649)).toBe('18,649');
     expect(formatCompact(204670)).toBe('204.7K');
-    expect(formatCompact(Number.NaN)).toBe('–');
+    expect(formatCompact(Number.NaN)).toBe('n/a');
   });
 
   it('keeps significant digits for small scores', () => {
     expect(formatSignificant(0.00382)).toBe('0.00382');
     expect(formatSignificant(0.000012345)).toBe('1.23e-5');
     expect(formatSignificant(0)).toBe('0');
-    expect(formatSignificant(Number.NaN)).toBe('–');
+    expect(formatSignificant(Number.NaN)).toBe('n/a');
   });
 
   it('shows degree centrality as a percentage and other metrics as scores', () => {
@@ -53,7 +53,7 @@ describe('number formatting', () => {
     expect(formatPercentile(42)).toBe('42nd percentile');
     expect(formatPercentile(3)).toBe('3rd percentile');
     expect(formatPercentile(-5)).toBe('0th percentile');
-    expect(formatPercentile(Number.NaN)).toBe('–');
+    expect(formatPercentile(Number.NaN)).toBe('n/a');
     expect(ordinalRank(1204)).toBe('#1,204');
   });
 
@@ -69,9 +69,9 @@ describe('date formatting', () => {
     expect(formatDate('2008-09-29T05:46:02Z')).toBe('Sep 29, 2008');
     expect(formatMonthYear('2008-09-29T05:46:02Z')).toBe('Sep 2008');
     expect(formatDateTime('2008-09-29T05:46:02Z')).toBe('Sep 29, 2008, 5:46 AM');
-    expect(formatDate(null)).toBe('–');
-    expect(formatMonthYear('not a date')).toBe('–');
-    expect(formatDateTime(undefined)).toBe('–');
+    expect(formatDate(null)).toBe('n/a');
+    expect(formatMonthYear('not a date')).toBe('n/a');
+    expect(formatDateTime(undefined)).toBe('n/a');
   });
 
   it('describes times relative to now', () => {
@@ -82,6 +82,6 @@ describe('date formatting', () => {
     expect(formatRelativeTime('2026-10-18T12:00:00Z', now)).toBe('yesterday');
     expect(formatRelativeTime('2026-10-19T15:00:00Z', now)).toBe('in 3 hours');
     expect(formatRelativeTime('2008-09-29T05:46:02Z', now)).toBe('18 years ago');
-    expect(formatRelativeTime(null, now)).toBe('–');
+    expect(formatRelativeTime(null, now)).toBe('n/a');
   });
 });

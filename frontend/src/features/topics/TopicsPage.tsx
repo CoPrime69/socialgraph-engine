@@ -206,7 +206,7 @@ export function TopicsPage() {
             <TextField
               label="Find a tag"
               type="search"
-              placeholder="e.g. python"
+              placeholder="e.g. python…"
               autoComplete="off"
               spellCheck={false}
               value={tagFilter}

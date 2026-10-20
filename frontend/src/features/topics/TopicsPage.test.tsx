@@ -201,7 +201,7 @@ describe('Topics', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo');
     const { user, router } = await openTopics();
     const pagination = within(questionCard()).getByRole('navigation', { name: 'Pagination' });
-    expect(pagination).toHaveTextContent('Showing 1–20 of 45 questions');
+    expect(pagination).toHaveTextContent('Showing 1-20 of 45 questions');
 
     await user.click(within(pagination).getByRole('button', { name: 'Next' }));
     expect(router.state.location.search).toBe('?page=2');

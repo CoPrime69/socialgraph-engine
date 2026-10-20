@@ -10,6 +10,29 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent; /* controls show their own pressed state */
+}
+
+/* No rubber-band bounce with a mouse or trackpad; touch keeps pull-to-refresh. */
+@media (pointer: fine) {
+  html {
+    overscroll-behavior: none;
+  }
+}
+
+/* Remove the double-tap zoom delay on controls. */
+a,
+button,
+input,
+select,
+label,
+summary {
+  touch-action: manipulation;
+}
+
+/* In-page jumps (skip link, anchors) land below the sticky header. */
+[id] {
+  scroll-margin-top: calc(var(--header-height) + var(--space-4));
 }
 
 body {

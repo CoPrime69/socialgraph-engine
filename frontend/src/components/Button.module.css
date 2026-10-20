@@ -16,7 +16,13 @@
   transition:
     background-color var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+/* A one-pixel push confirms the press without moving the layout. */
+.button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .button:disabled {

@@ -59,7 +59,7 @@
   justify-self: end;
 }
 
-/* Why someone is suggested: short annotations under the name, not pills. */
+/* Why someone is suggested: plain annotations under the name, one per line. */
 .reasons {
   display: grid;
   gap: 1px;
@@ -67,20 +67,8 @@
 }
 
 .reasons li {
-  position: relative;
-  padding-left: var(--space-3);
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
-}
-
-.reasons li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.55em;
-  width: 4px;
-  height: 4px;
-  background: var(--color-text-muted);
 }
 
 .skeletonList {

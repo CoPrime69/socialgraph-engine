@@ -12,16 +12,16 @@ const compactFormat = new Intl.NumberFormat(undefined, {
 });
 
 export function formatInteger(value: number): string {
-  return Number.isFinite(value) ? integerFormat.format(value) : '–';
+  return Number.isFinite(value) ? integerFormat.format(value) : 'n/a';
 }
 
 export function formatCompact(value: number, threshold = 100_000): string {
-  if (!Number.isFinite(value)) return '–';
+  if (!Number.isFinite(value)) return 'n/a';
   return Math.abs(value) >= threshold ? compactFormat.format(value) : integerFormat.format(value);
 }
 
 export function formatDecimal(value: number, fractionDigits: number): string {
-  if (!Number.isFinite(value)) return '–';
+  if (!Number.isFinite(value)) return 'n/a';
   return new Intl.NumberFormat(undefined, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
@@ -30,7 +30,7 @@ export function formatDecimal(value: number, fractionDigits: number): string {
 
 /** 0.7234 → "72%"; values are ratios in [0, 1]. */
 export function formatPercent(ratio: number, fractionDigits = 0): string {
-  if (!Number.isFinite(ratio)) return '–';
+  if (!Number.isFinite(ratio)) return 'n/a';
   return new Intl.NumberFormat(undefined, {
     style: 'percent',
     minimumFractionDigits: fractionDigits,
@@ -40,7 +40,7 @@ export function formatPercent(ratio: number, fractionDigits = 0): string {
 
 /** Small scores (PageRank ≈ 1e-4) need significant digits rather than fixed decimals. */
 export function formatSignificant(value: number, digits = 3): string {
-  if (!Number.isFinite(value)) return '–';
+  if (!Number.isFinite(value)) return 'n/a';
   if (value === 0) return '0';
   if (Math.abs(value) < 1e-4) return value.toExponential(digits - 1);
   return new Intl.NumberFormat(undefined, {
@@ -72,7 +72,7 @@ const ORDINAL_SUFFIX: Partial<Record<Intl.LDMLPluralRule, string>> = {
  * Above 99 two decimals are kept, because that is where the most active users differ.
  */
 export function formatPercentile(influence: number): string {
-  if (!Number.isFinite(influence)) return '–';
+  if (!Number.isFinite(influence)) return 'n/a';
   const clamped = Math.min(100, Math.max(0, influence));
   const shown =
     clamped >= 99 && clamped < 100 ? Math.floor(clamped * 100) / 100 : Math.floor(clamped);
@@ -102,18 +102,18 @@ const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
 /** "Oct 19, 2026" */
 export function formatDate(iso: string | null | undefined): string {
   const date = toDate(iso);
-  return date ? dateFormat.format(date) : '–';
+  return date ? dateFormat.format(date) : 'n/a';
 }
 
 /** "Sep 2008" */
 export function formatMonthYear(iso: string | null | undefined): string {
   const date = toDate(iso);
-  return date ? monthYearFormat.format(date) : '–';
+  return date ? monthYearFormat.format(date) : 'n/a';
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
   const date = toDate(iso);
-  return date ? dateTimeFormat.format(date) : '–';
+  return date ? dateTimeFormat.format(date) : 'n/a';
 }
 
 const relativeFormat = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
@@ -132,7 +132,7 @@ export function formatRelativeTime(
   now: number = Date.now(),
 ): string {
   const date = toDate(iso);
-  if (!date) return '–';
+  if (!date) return 'n/a';
   let value = (date.getTime() - now) / 1000;
   for (const [unit, size] of RELATIVE_STEPS) {
     if (Math.abs(value) < size) {

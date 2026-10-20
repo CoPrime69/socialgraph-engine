@@ -27,7 +27,7 @@ export function Pagination({
   return (
     <nav className={styles.pagination} aria-label="Pagination">
       <p className={styles.summary}>
-        Showing <strong>{formatInteger(first)}</strong>–<strong>{formatInteger(last)}</strong> of{' '}
+        Showing <strong>{formatInteger(first)}</strong>-<strong>{formatInteger(last)}</strong> of{' '}
         <strong>{formatInteger(total)}</strong> {noun}
       </p>
       <div className={styles.controls}>

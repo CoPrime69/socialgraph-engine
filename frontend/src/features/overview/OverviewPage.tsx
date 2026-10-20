@@ -89,10 +89,10 @@ export function OverviewPage() {
         meta={
           data ? (
             <>
-              Graph version {formatInteger(data.graph_version)} · analytics computed{' '}
+              Graph version {formatInteger(data.graph_version)}. Analytics computed{' '}
               <time dateTime={data.computed_at}>{formatRelativeTime(data.computed_at)}</time> in{' '}
-              {formatInteger(data.compute_ms)} ms
-              {data.stale ? ' · updating…' : ''}
+              {formatInteger(data.compute_ms)} ms.
+              {data.stale ? ' Updating…' : ''}
             </>
           ) : undefined
         }

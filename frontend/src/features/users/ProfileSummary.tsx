@@ -39,7 +39,7 @@ export function ProfileHeader({ profile, isMe }: { profile: UserProfileWithCount
           </Badge>
         </div>
         <p className={styles.handle}>
-          @{profile.handle} · {profile.branch} · {profile.category}
+          @{profile.handle} · {profile.branch}, {profile.category}
         </p>
         <p className={styles.reputation}>
           <span className={styles.reputationValue}>{formatInteger(profile.reputation)}</span>{' '}

@@ -98,7 +98,7 @@ function ActivityDetails({ activity }: { activity: UserActivity }) {
         <StatTile
           label="Badges"
           value={formatInteger(badgeCount)}
-          detail={`${formatInteger(badges.gold)} gold · ${formatInteger(badges.silver)} silver · ${formatInteger(badges.bronze)} bronze`}
+          detail={`${formatInteger(badges.gold)} gold, ${formatInteger(badges.silver)} silver, ${formatInteger(badges.bronze)} bronze`}
         />
       </StatGrid>
 
