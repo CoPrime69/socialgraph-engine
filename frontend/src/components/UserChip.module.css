@@ -1,0 +1,91 @@
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.sm {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.6875rem;
+}
+
+.md {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: var(--text-xs);
+}
+
+.lg {
+  width: 4rem;
+  height: 4rem;
+  font-size: var(--text-xl);
+}
+
+.highlighted {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+a.chip:hover .name {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.text {
+  display: grid;
+  min-width: 0;
+}
+
+.name {
+  font-weight: var(--weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill {
+  padding: 2px var(--space-3) 2px 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-raised);
+  font-size: var(--text-sm);
+}
+
+.pill .name {
+  font-weight: var(--weight-medium);
+}
+
+a.pill:hover {
+  border-color: var(--color-accent);
+}
+
+.you.pill {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}

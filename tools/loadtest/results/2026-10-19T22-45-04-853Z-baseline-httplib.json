@@ -1,0 +1,272 @@
+{
+  "label": "baseline-httplib",
+  "at": "2026-10-19T22:45:04.853Z",
+  "config": {
+    "base_url": "http://127.0.0.1:8080",
+    "members": 200,
+    "processes": 2,
+    "connections_per_process": 64,
+    "duration_s": 30,
+    "warmup_s": 5,
+    "rate": "max"
+  },
+  "machine": {
+    "cpus": 4,
+    "model": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "memory_gb": 16
+  },
+  "total": {
+    "requests": 26029,
+    "rps": 867.6333333333333,
+    "p50_ms": 10.4,
+    "p90_ms": 88.1,
+    "p99_ms": 1390.6,
+    "max_ms": 6340.6,
+    "http_errors": 0,
+    "socket_errors": 0,
+    "timeouts": 0,
+    "error_rate_pct": 0
+  },
+  "operations": [
+    {
+      "name": "search members",
+      "share_pct": 9,
+      "requests": 2346,
+      "rps": 78.2,
+      "p50_ms": 21.9,
+      "p90_ms": 817.2,
+      "p99_ms": 5365.8,
+      "max_ms": 5582.8,
+      "errors": 0,
+      "statuses": {
+        "200": 2346
+      }
+    },
+    {
+      "name": "view profile",
+      "share_pct": 14,
+      "requests": 3652,
+      "rps": 121.73333333333333,
+      "p50_ms": 12.3,
+      "p90_ms": 802.3,
+      "p99_ms": 5439.5,
+      "max_ms": 5615.6,
+      "errors": 0,
+      "statuses": {
+        "200": 3652
+      }
+    },
+    {
+      "name": "my connections",
+      "share_pct": 7,
+      "requests": 1827,
+      "rps": 60.9,
+      "p50_ms": 21.5,
+      "p90_ms": 818.7,
+      "p99_ms": 5460,
+      "max_ms": 5586.9,
+      "errors": 0,
+      "statuses": {
+        "200": 1827
+      }
+    },
+    {
+      "name": "connect",
+      "share_pct": 4,
+      "requests": 1030,
+      "rps": 34.333333333333336,
+      "p50_ms": 51.6,
+      "p90_ms": 844.3,
+      "p99_ms": 5402.6,
+      "max_ms": 5632,
+      "errors": 0,
+      "statuses": {
+        "201": 1026,
+        "409": 4
+      }
+    },
+    {
+      "name": "disconnect",
+      "share_pct": 2,
+      "requests": 505,
+      "rps": 16.833333333333332,
+      "p50_ms": 40.3,
+      "p90_ms": 856.1,
+      "p99_ms": 5451.8,
+      "max_ms": 5578.8,
+      "errors": 0,
+      "statuses": {
+        "200": 504,
+        "404": 1
+      }
+    },
+    {
+      "name": "influencers",
+      "share_pct": 8,
+      "requests": 2112,
+      "rps": 70.4,
+      "p50_ms": 5.2,
+      "p90_ms": 15,
+      "p99_ms": 33,
+      "max_ms": 1049.6,
+      "errors": 0,
+      "statuses": {
+        "200": 2112
+      }
+    },
+    {
+      "name": "recommendations",
+      "share_pct": 8,
+      "requests": 2062,
+      "rps": 68.73333333333333,
+      "p50_ms": 5.64,
+      "p90_ms": 17.4,
+      "p99_ms": 39.4,
+      "max_ms": 1026.6,
+      "errors": 0,
+      "statuses": {
+        "200": 2062
+      }
+    },
+    {
+      "name": "degrees of separation",
+      "share_pct": 5,
+      "requests": 1324,
+      "rps": 44.13333333333333,
+      "p50_ms": 5.16,
+      "p90_ms": 16.2,
+      "p99_ms": 32.7,
+      "max_ms": 1038.3,
+      "errors": 0,
+      "statuses": {
+        "200": 1324
+      }
+    },
+    {
+      "name": "member metrics",
+      "share_pct": 5,
+      "requests": 1284,
+      "rps": 42.8,
+      "p50_ms": 5.5,
+      "p90_ms": 15.7,
+      "p99_ms": 36.7,
+      "max_ms": 1037.3,
+      "errors": 0,
+      "statuses": {
+        "200": 1284
+      }
+    },
+    {
+      "name": "network summary",
+      "share_pct": 3,
+      "requests": 805,
+      "rps": 26.833333333333332,
+      "p50_ms": 4.87,
+      "p90_ms": 14.8,
+      "p99_ms": 32.6,
+      "max_ms": 1029.6,
+      "errors": 0,
+      "statuses": {
+        "200": 805
+      }
+    },
+    {
+      "name": "communities",
+      "share_pct": 2,
+      "requests": 530,
+      "rps": 17.666666666666668,
+      "p50_ms": 4.85,
+      "p90_ms": 17.1,
+      "p99_ms": 184.2,
+      "max_ms": 1021.4,
+      "errors": 0,
+      "statuses": {
+        "200": 530
+      }
+    },
+    {
+      "name": "ego network graph",
+      "share_pct": 3,
+      "requests": 804,
+      "rps": 26.8,
+      "p50_ms": 7.25,
+      "p90_ms": 29.3,
+      "p99_ms": 135.9,
+      "max_ms": 1039.9,
+      "errors": 0,
+      "statuses": {
+        "200": 804
+      }
+    },
+    {
+      "name": "member activity",
+      "share_pct": 9,
+      "requests": 2391,
+      "rps": 79.7,
+      "p50_ms": 13.2,
+      "p90_ms": 48.4,
+      "p99_ms": 5001.2,
+      "max_ms": 6340.6,
+      "errors": 0,
+      "statuses": {
+        "200": 2391
+      }
+    },
+    {
+      "name": "questions by tag",
+      "share_pct": 8,
+      "requests": 2069,
+      "rps": 68.96666666666667,
+      "p50_ms": 8.15,
+      "p90_ms": 88.8,
+      "p99_ms": 4964.4,
+      "max_ms": 6340.6,
+      "errors": 0,
+      "statuses": {
+        "200": 2069
+      }
+    },
+    {
+      "name": "search questions",
+      "share_pct": 5,
+      "requests": 1253,
+      "rps": 41.766666666666666,
+      "p50_ms": 11.9,
+      "p90_ms": 47.3,
+      "p99_ms": 5128.2,
+      "max_ms": 6291.5,
+      "errors": 0,
+      "statuses": {
+        "200": 1253
+      }
+    },
+    {
+      "name": "view question",
+      "share_pct": 6,
+      "requests": 1530,
+      "rps": 51,
+      "p50_ms": 14,
+      "p90_ms": 44,
+      "p99_ms": 1286.1,
+      "max_ms": 6074.4,
+      "errors": 0,
+      "statuses": {
+        "200": 1530
+      }
+    },
+    {
+      "name": "browse tags",
+      "share_pct": 2,
+      "requests": 505,
+      "rps": 16.833333333333332,
+      "p50_ms": 5.66,
+      "p90_ms": 24,
+      "p99_ms": 4927.5,
+      "max_ms": 5259.3,
+      "errors": 0,
+      "statuses": {
+        "200": 505
+      }
+    }
+  ]
+}

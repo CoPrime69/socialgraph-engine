@@ -1,0 +1,281 @@
+{
+  "label": "httplib-320-threads",
+  "at": "2026-10-19T22:49:04.985Z",
+  "config": {
+    "base_url": "http://127.0.0.1:8080",
+    "members": 200,
+    "processes": 2,
+    "connections_per_process": 64,
+    "duration_s": 30,
+    "warmup_s": 5,
+    "rate": "max"
+  },
+  "machine": {
+    "cpus": 4,
+    "model": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "memory_gb": 16
+  },
+  "total": {
+    "requests": 32893,
+    "rps": 1096.4333333333334,
+    "p50_ms": 69.7,
+    "p90_ms": 214.4,
+    "p99_ms": 1142.8,
+    "max_ms": 2105.3,
+    "http_errors": 22,
+    "socket_errors": 0,
+    "timeouts": 0,
+    "error_rate_pct": 0.06688353145046058
+  },
+  "operations": [
+    {
+      "name": "search members",
+      "share_pct": 9,
+      "requests": 2981,
+      "rps": 99.36666666666666,
+      "p50_ms": 98.6,
+      "p90_ms": 239.7,
+      "p99_ms": 1145.9,
+      "max_ms": 2105.3,
+      "errors": 1,
+      "statuses": {
+        "200": 2980,
+        "504": 1
+      }
+    },
+    {
+      "name": "view profile",
+      "share_pct": 14,
+      "requests": 4623,
+      "rps": 154.1,
+      "p50_ms": 76.8,
+      "p90_ms": 204.7,
+      "p99_ms": 1118.2,
+      "max_ms": 2060.3,
+      "errors": 3,
+      "statuses": {
+        "200": 4620,
+        "504": 3
+      }
+    },
+    {
+      "name": "my connections",
+      "share_pct": 7,
+      "requests": 2282,
+      "rps": 76.06666666666666,
+      "p50_ms": 68.8,
+      "p90_ms": 206.1,
+      "p99_ms": 1117.2,
+      "max_ms": 2095.1,
+      "errors": 3,
+      "statuses": {
+        "200": 2279,
+        "504": 3
+      }
+    },
+    {
+      "name": "connect",
+      "share_pct": 4,
+      "requests": 1310,
+      "rps": 43.666666666666664,
+      "p50_ms": 213.8,
+      "p90_ms": 500.5,
+      "p99_ms": 1261.6,
+      "max_ms": 1666,
+      "errors": 0,
+      "statuses": {
+        "201": 1310
+      }
+    },
+    {
+      "name": "disconnect",
+      "share_pct": 2,
+      "requests": 628,
+      "rps": 20.933333333333334,
+      "p50_ms": 190.2,
+      "p90_ms": 432.1,
+      "p99_ms": 1193,
+      "max_ms": 1646.6,
+      "errors": 0,
+      "statuses": {
+        "200": 625,
+        "404": 3
+      }
+    },
+    {
+      "name": "influencers",
+      "share_pct": 8,
+      "requests": 2622,
+      "rps": 87.4,
+      "p50_ms": 47.5,
+      "p90_ms": 130,
+      "p99_ms": 1094.7,
+      "max_ms": 2032.6,
+      "errors": 3,
+      "statuses": {
+        "200": 2619,
+        "504": 3
+      }
+    },
+    {
+      "name": "recommendations",
+      "share_pct": 8,
+      "requests": 2658,
+      "rps": 88.6,
+      "p50_ms": 50.8,
+      "p90_ms": 135.6,
+      "p99_ms": 1136.6,
+      "max_ms": 2074.6,
+      "errors": 2,
+      "statuses": {
+        "200": 2656,
+        "504": 2
+      }
+    },
+    {
+      "name": "degrees of separation",
+      "share_pct": 5,
+      "requests": 1612,
+      "rps": 53.733333333333334,
+      "p50_ms": 47.2,
+      "p90_ms": 130.8,
+      "p99_ms": 1165.3,
+      "max_ms": 1344.5,
+      "errors": 0,
+      "statuses": {
+        "200": 1612
+      }
+    },
+    {
+      "name": "member metrics",
+      "share_pct": 5,
+      "requests": 1634,
+      "rps": 54.46666666666667,
+      "p50_ms": 47.2,
+      "p90_ms": 125.4,
+      "p99_ms": 1108,
+      "max_ms": 2047,
+      "errors": 3,
+      "statuses": {
+        "200": 1631,
+        "504": 3
+      }
+    },
+    {
+      "name": "network summary",
+      "share_pct": 3,
+      "requests": 978,
+      "rps": 32.6,
+      "p50_ms": 45,
+      "p90_ms": 121.5,
+      "p99_ms": 1123.3,
+      "max_ms": 1289.2,
+      "errors": 0,
+      "statuses": {
+        "200": 978
+      }
+    },
+    {
+      "name": "communities",
+      "share_pct": 2,
+      "requests": 633,
+      "rps": 21.1,
+      "p50_ms": 48.9,
+      "p90_ms": 134.9,
+      "p99_ms": 1199.1,
+      "max_ms": 2054.1,
+      "errors": 1,
+      "statuses": {
+        "200": 632,
+        "504": 1
+      }
+    },
+    {
+      "name": "ego network graph",
+      "share_pct": 3,
+      "requests": 978,
+      "rps": 32.6,
+      "p50_ms": 52.3,
+      "p90_ms": 137,
+      "p99_ms": 1099.8,
+      "max_ms": 1727.5,
+      "errors": 0,
+      "statuses": {
+        "200": 978
+      }
+    },
+    {
+      "name": "member activity",
+      "share_pct": 9,
+      "requests": 2940,
+      "rps": 98,
+      "p50_ms": 75.2,
+      "p90_ms": 172.9,
+      "p99_ms": 1127.4,
+      "max_ms": 2028.5,
+      "errors": 1,
+      "statuses": {
+        "200": 2939,
+        "504": 1
+      }
+    },
+    {
+      "name": "questions by tag",
+      "share_pct": 8,
+      "requests": 2661,
+      "rps": 88.7,
+      "p50_ms": 87.2,
+      "p90_ms": 249.9,
+      "p99_ms": 1198.1,
+      "max_ms": 1980.4,
+      "errors": 0,
+      "statuses": {
+        "200": 2661
+      }
+    },
+    {
+      "name": "search questions",
+      "share_pct": 5,
+      "requests": 1691,
+      "rps": 56.36666666666667,
+      "p50_ms": 102.8,
+      "p90_ms": 235.8,
+      "p99_ms": 1216.5,
+      "max_ms": 2037.8,
+      "errors": 3,
+      "statuses": {
+        "200": 1688,
+        "504": 3
+      }
+    },
+    {
+      "name": "view question",
+      "share_pct": 6,
+      "requests": 2001,
+      "rps": 66.7,
+      "p50_ms": 68.5,
+      "p90_ms": 163.1,
+      "p99_ms": 1161.2,
+      "max_ms": 2049,
+      "errors": 2,
+      "statuses": {
+        "200": 1999,
+        "504": 2
+      }
+    },
+    {
+      "name": "browse tags",
+      "share_pct": 2,
+      "requests": 661,
+      "rps": 22.033333333333335,
+      "p50_ms": 52.2,
+      "p90_ms": 128.7,
+      "p99_ms": 1053.7,
+      "max_ms": 1479.7,
+      "errors": 0,
+      "statuses": {
+        "200": 661
+      }
+    }
+  ]
+}

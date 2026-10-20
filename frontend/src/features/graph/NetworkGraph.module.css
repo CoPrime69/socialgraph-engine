@@ -1,0 +1,115 @@
+.wrapper {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.lg {
+  height: clamp(22rem, 62vh, 40rem);
+}
+
+.md {
+  height: clamp(18rem, 48vh, 30rem);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  /* One-finger swipes keep scrolling the page; pinch and two-finger pans reach the graph. */
+  touch-action: pan-x pan-y;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.progress {
+  width: min(14rem, 60%);
+  height: 0.375rem;
+  accent-color: var(--color-accent);
+}
+
+.controls {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  min-width: 11rem;
+  max-width: 16rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  transform: translate(14px, -50%);
+}
+
+.flip {
+  transform: translate(calc(-100% - 14px), -50%);
+}
+
+.tooltipName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.tooltipHandle {
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.tooltipFacts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.tooltipFacts dt {
+  color: var(--color-text-secondary);
+}
+
+.tooltipFacts dd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}

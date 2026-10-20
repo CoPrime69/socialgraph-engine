@@ -1,0 +1,32 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  font-weight: var(--weight-medium, 500);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tag:hover {
+  text-decoration: underline;
+}
+
+.md {
+  min-height: 1.75rem;
+  padding: 2px var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.sm {
+  min-height: 1.375rem;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.count {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}

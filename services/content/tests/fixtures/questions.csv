@@ -1,0 +1,4 @@
+id,owner_id,created_at,title,tags,score,view_count,answer_count,comment_count,favorite_count,accepted_answer_id,closed_at
+1,20,2008-08-05T10:00:00Z,"How do I parse JSON, quickly?",javascript c#,15,900,2,1,0,101,
+2,10,2008-09-01T10:00:00Z,Generic variance in C#,c#,40,5000,1,0,3,999,2008-10-01T00:00:00Z
+3,,2008-10-01T10:00:00Z,Orphaned question about 100% coverage,100%_legit,1,10,0,0,0,,

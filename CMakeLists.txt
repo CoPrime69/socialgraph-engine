@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.25)
+project(socialgraph LANGUAGES CXX VERSION 1.0.0)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(SG_BUILD_TESTS "Build unit and integration tests" ON)
+option(SG_BUILD_BENCHMARKS "Build micro-benchmarks" ON)
+option(SG_BUILD_SERVICES "Build the network services (needs libpqxx, libsodium, hiredis, drogon, httplib)" ON)
+option(SG_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+set(SG_SANITIZE "" CACHE STRING "Sanitizers to enable, e.g. address,undefined or thread")
+
+include(cmake/Warnings.cmake)
+include(cmake/Sanitizers.cmake)
+include(cmake/Allocator.cmake)
+
+find_package(Threads REQUIRED)
+find_package(nlohmann_json 3.10 REQUIRED)
+
+if(SG_BUILD_TESTS)
+  enable_testing()
+  find_package(GTest REQUIRED)
+  include(GoogleTest)
+endif()
+
+add_subdirectory(libs/graphcore)
+
+if(SG_BUILD_SERVICES)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(SODIUM REQUIRED IMPORTED_TARGET libsodium)
+  pkg_check_modules(PQXX REQUIRED IMPORTED_TARGET libpqxx)
+  pkg_check_modules(HIREDIS REQUIRED IMPORTED_TARGET hiredis)
+  find_path(HTTPLIB_INCLUDE_DIR httplib.h REQUIRED)
+  foreach(dir libs/common services/identity services/graph services/analytics services/content)
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/CMakeLists.txt)
+      add_subdirectory(${dir})
+    endif()
+  endforeach()
+endif()

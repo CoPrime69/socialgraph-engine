@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  APT_PACKAGES: >-
+    g++ clang cmake ninja-build pkg-config libdrogon-dev libjsoncpp-dev libcpp-httplib-dev nlohmann-json3-dev
+    libpqxx-dev libpq-dev libsodium-dev libhiredis-dev libgtest-dev libbenchmark-dev libmimalloc-dev postgresql-client
+    redis-tools
+
+jobs:
+  backend:
+    name: C++ ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: gcc release, preset: ci, cxx: g++ }
+          - { name: clang release, preset: ci, cxx: clang++ }
+          - { name: asan+ubsan, preset: asan, cxx: g++ }
+          - { name: tsan, preset: tsan, cxx: clang++ }
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: socialgraph
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: socialgraph_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U socialgraph" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      CXX: ${{ matrix.cxx }}
+      SG_TEST_DATABASE_URL: postgresql://socialgraph:ci-password@localhost:5432/socialgraph_test
+      SG_TEST_REDIS_HOST: localhost
+      SG_TEST_REDIS_PORT: "6379"
+      TSAN_OPTIONS: halt_on_error=1 second_deadlock_stack=1 suppressions=${{ github.workspace }}/cmake/tsan.supp
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain and libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $APT_PACKAGES
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }} --timeout 300
+
+  benchmarks:
+    name: Graph benchmarks (smoke)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $APT_PACKAGES
+      - run: cmake --preset release -DSG_BUILD_SERVICES=OFF && cmake --build --preset release --target graphcore_bench
+      - name: Run a short benchmark pass
+        run: ./build/release/libs/graphcore/bench/graphcore_bench --benchmark_min_time=0.05s --benchmark_filter='/(100|1000)(/|$)' --benchmark_format=console
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+
+  e2e:
+    name: End-to-end (Docker Compose + Playwright)
+    runs-on: ubuntu-24.04
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Generate environment
+        run: SEED_DEMO_PASSWORD=e2e-demo-password ./scripts/generate-env.sh
+      - name: Build and start the stack
+        run: docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d --wait --wait-timeout 300
+      - name: Install Playwright
+        working-directory: frontend
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Run end-to-end tests
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          E2E_DEMO_PASSWORD: e2e-demo-password
+        run: npm run e2e
+      - name: Service logs
+        if: failure()
+        run: docker compose -f deploy/docker-compose.yml --env-file deploy/.env logs --no-color --tail 300
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report

@@ -1,0 +1,137 @@
+/*
+ * Shared table styles. Tables keep explicit ARIA table roles in their markup so that the
+ * narrow-screen "stacked cards" layout (display: block) does not drop table semantics in
+ * browsers that strip them when the display type changes.
+ */
+
+.table {
+  width: 100%;
+  font-size: var(--text-sm);
+}
+
+.table th {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: var(--space-5);
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: var(--space-5);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-sunken);
+}
+
+.numeric {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.rank {
+  width: 3.5rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.scoreCell {
+  min-width: 8rem;
+}
+
+/* ---------- Narrow screens: each row becomes a card ---------- */
+@media (max-width: 40rem) {
+  .stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .stack,
+  .stack tbody,
+  .stack tr,
+  .stack td {
+    display: block;
+    width: 100%;
+  }
+
+  .stack tr {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .stack tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .stack td,
+  .stack td:first-child,
+  .stack td:last-child {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    border: 0;
+    text-align: right;
+  }
+
+  /* The label sits on the left; everything else in the cell stays together on the right. */
+  .stack td::before {
+    content: attr(data-label);
+    flex: none;
+    margin-inline-end: auto;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--color-text-secondary);
+    text-align: left;
+  }
+
+  .stack td[data-primary] {
+    display: block;
+    padding-bottom: var(--space-2);
+    text-align: left;
+  }
+
+  .stack td[data-primary]::before {
+    content: none;
+  }
+
+  .stack .rank {
+    width: auto;
+  }
+
+  .stack .scoreCell {
+    min-width: 0;
+  }
+}
