@@ -217,6 +217,27 @@ TEST_F(GraphApiTest, CachedReadsFollowOwnWritesAndOtherReplicasEvents) {
   EXPECT_GT(cache.stats().member_hits, 0U);
 }
 
+TEST_F(GraphApiTest, CachedSearchesShowCurrentConnectionCounts) {
+  auto search = [&] { return get("/api/v1/users?sort=id", auth()); };
+  const auto first = search();
+  ASSERT_EQ(first->status, 200);
+  const auto second = search();  // ids from the cache, profiles from the member cache
+  EXPECT_EQ(second->body, first->body) << "a cached page renders byte for byte like a fresh one";
+  auto count_of = [](const httplib::Result& r, std::int64_t id) {
+    const json page = json::parse(r->body);
+    for (const auto& item : page["items"]) {
+      if (item["id"] == id) return item["connection_count"].get<int>();
+    }
+    return -1;
+  };
+  EXPECT_EQ(count_of(second, 1), 1);
+  ASSERT_EQ(post("/api/v1/me/connections", R"({"user_id":1})", auth())->status, 201);
+  const auto third = search();
+  EXPECT_EQ(count_of(third, 1), 2) << "the write invalidated member 1's profile, which the page is built from";
+  EXPECT_EQ(json::parse(third->body)["total"], json::parse(first->body)["total"]);
+  EXPECT_GT(cache.stats().search_hits, 0U);
+}
+
 TEST_F(GraphApiTest, SnapshotIsInternalAndComplete) {
   const auto res = get("/internal/v1/snapshot", {});
   ASSERT_TRUE(res);

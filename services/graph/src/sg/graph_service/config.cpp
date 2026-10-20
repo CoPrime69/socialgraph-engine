@@ -27,7 +27,7 @@ Config Config::from_env() {
   c.seed_dir = env_or("SEED_DIR", "data/stackoverflow");
   c.consumer_name = env_or("CONSUMER_NAME", infra::default_consumer_name());
   c.cache_entries = static_cast<std::size_t>(env_int("GRAPH_CACHE_ENTRIES", 100'000, 0, 10'000'000));
-  c.search_cache_ttl_ms = env_int("GRAPH_SEARCH_CACHE_TTL_MS", 2000, 0, 60'000);
+  c.search_cache_ttl_ms = env_int("GRAPH_SEARCH_CACHE_TTL_MS", 30'000, 0, 3'600'000);
   return c;
 }
 

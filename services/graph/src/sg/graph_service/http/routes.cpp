@@ -113,10 +113,22 @@ void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
   server.get("/api/v1/users", [&graph, &verifier, &cache](const Request& req, Response& res) {
     (void)sg::common::require_auth(req, verifier);
     const auto query = parse_user_query(req);
-    write_cached(res, cache.search(search_key(query), [&] {
-      sg::common::require_worker();
-      return render(domain::to_json(graph.list_users(query)));
-    }));
+    write_cached(res, cache.search(
+                          search_key(query),
+                          [&] {
+                            sg::common::require_worker();
+                            const auto page = graph.list_users(query);
+                            ReadCache::LoadedSearch loaded{{}, page.total, page.limit, page.offset};
+                            loaded.items.reserve(page.items.size());
+                            for (const auto& item : page.items) {
+                              loaded.items.emplace_back(item.profile.id, render(domain::to_json(item)));
+                            }
+                            return loaded;
+                          },
+                          [&](std::int64_t id) {
+                            sg::common::require_worker();
+                            return render(domain::to_json(graph.profile(id)));
+                          }));
   });
 
   server.get("/api/v1/users/:id", [&graph, &verifier, &cache](const Request& req, Response& res) {

@@ -56,7 +56,8 @@ Environment:
   HTTP_THREADS            HTTP event-loop threads (default 0 = one per CPU core)
   HTTP_WORKER_THREADS     threads running request handlers (default 32)
   GRAPH_CACHE_ENTRIES     cached profiles and connection lists (default 100000; 0 disables)
-  GRAPH_SEARCH_CACHE_TTL_MS  how long a search page is reused (default 2000; 0 disables)
+  GRAPH_SEARCH_CACHE_TTL_MS  how long the member ids of a search page are reused; new members
+                          show up in searches after at most this long (default 30000; 0 disables)
   DB_POOL_SIZE            PostgreSQL connections (default 8)
   LOG_LEVEL               debug|info|warn|error (default info)
 )";

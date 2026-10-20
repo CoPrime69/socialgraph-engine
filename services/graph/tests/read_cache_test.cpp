@@ -58,18 +58,63 @@ TEST(ReadCache, LoadThatRacesWithAnInvalidationIsNotStored) {
   EXPECT_EQ(*cache.member(Kind::connections, 6, [] { return std::string("new"); }), "new");
 }
 
-TEST(ReadCache, SearchPagesExpire) {
+/// A search load listing `ids`, each rendered as {"id":<id>,"v":<loads>}.
+struct FakeSearch {
+  std::vector<std::int64_t> ids;
+  int loads = 0;
+  int profile_renders = 0;
+
+  ReadCache::LoadedSearch load() {
+    ++loads;
+    ReadCache::LoadedSearch page{{}, 42, 20, 0};
+    for (const auto id : ids) {
+      page.items.emplace_back(id, profile(id, "load" + std::to_string(loads)));
+    }
+    return page;
+  }
+  std::string render(std::int64_t id) { return profile(id, "render" + std::to_string(++profile_renders)); }
+  static std::string profile(std::int64_t id, const std::string& v) {
+    return "{\"id\":" + std::to_string(id) + ",\"v\":\"" + v + "\"}";
+  }
+  std::string get(ReadCache& cache, const std::string& key) {
+    return *cache.search(key, [&] { return load(); }, [&](std::int64_t id) { return render(id); });
+  }
+};
+
+TEST(ReadCache, SearchPagesKeepIdsAndRenderFreshProfiles) {
+  ReadCache cache;
+  FakeSearch search{{3, 1}};
+  // The miss renders what it loaded, in order, with the page fields in nlohmann's key order.
+  EXPECT_EQ(search.get(cache, "q"),
+            R"({"items":[{"id":3,"v":"load1"},{"id":1,"v":"load1"}],"limit":20,"offset":0,"total":42})");
+  // A hit reuses the ids and takes each profile from the member cache (rendered once here).
+  EXPECT_EQ(search.get(cache, "q"),
+            R"({"items":[{"id":3,"v":"render1"},{"id":1,"v":"render2"}],"limit":20,"offset":0,"total":42})");
+  EXPECT_EQ(search.get(cache, "q"),
+            R"({"items":[{"id":3,"v":"render1"},{"id":1,"v":"render2"}],"limit":20,"offset":0,"total":42})");
+  // A write to member 1 invalidates its profile; the next search shows the new one.
+  cache.invalidate(1);
+  EXPECT_EQ(search.get(cache, "q"),
+            R"({"items":[{"id":3,"v":"render1"},{"id":1,"v":"render3"}],"limit":20,"offset":0,"total":42})");
+  EXPECT_EQ(search.loads, 1);
+  // The member cache is shared with the profile route.
+  EXPECT_EQ(*cache.member(Kind::profile, 3, [] { return std::string("unused"); }), R"({"id":3,"v":"render1"})");
+
+  FakeSearch empty{{}};
+  EXPECT_EQ(empty.get(cache, "none"), R"({"items":[],"limit":20,"offset":0,"total":42})");
+}
+
+TEST(ReadCache, SearchIdListsExpire) {
   ReadCacheOptions options;
   options.search_ttl = std::chrono::milliseconds(50);
   ReadCache cache(options);
-  int renders = 0;
-  auto render = [&] { return std::to_string(++renders); };
-  EXPECT_EQ(*cache.search("q", render), "1");
-  EXPECT_EQ(*cache.search("q", render), "1");
-  cache.invalidate(1);  // per-member invalidation does not touch searches
-  EXPECT_EQ(*cache.search("q", render), "1");
+  FakeSearch search{{1}};
+  (void)search.get(cache, "q");
+  (void)search.get(cache, "q");
+  EXPECT_EQ(search.loads, 1);
   std::this_thread::sleep_for(std::chrono::milliseconds(80));
-  EXPECT_EQ(*cache.search("q", render), "2");
+  (void)search.get(cache, "q");
+  EXPECT_EQ(search.loads, 2);
 }
 
 TEST(ReadCache, DisabledCacheAlwaysRenders) {
@@ -81,9 +126,11 @@ TEST(ReadCache, DisabledCacheAlwaysRenders) {
   auto render = [&] { return std::to_string(++renders); };
   (void)cache.member(Kind::profile, 1, render);
   (void)cache.member(Kind::profile, 1, render);
-  (void)cache.search("q", render);
-  (void)cache.search("q", render);
-  EXPECT_EQ(renders, 4);
+  EXPECT_EQ(renders, 2);
+  FakeSearch search{{1}};
+  (void)search.get(cache, "q");
+  (void)search.get(cache, "q");
+  EXPECT_EQ(search.loads, 2);
 }
 
 TEST(ReadCache, ConcurrentReadersAndInvalidationsNeverServeAnOldVersionAfterTheWrite) {

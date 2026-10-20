@@ -24,7 +24,7 @@ struct Config {
   std::string seed_dir = "data/stackoverflow"; ///< SEED_DIR
   std::string consumer_name;                   ///< CONSUMER_NAME (default: host name)
   std::size_t cache_entries = 100'000;         ///< GRAPH_CACHE_ENTRIES (0 disables the read cache)
-  std::int64_t search_cache_ttl_ms = 2000;     ///< GRAPH_SEARCH_CACHE_TTL_MS (0 disables search caching)
+  std::int64_t search_cache_ttl_ms = 30000;    ///< GRAPH_SEARCH_CACHE_TTL_MS (0 disables search caching)
 
   /// @throws std::runtime_error naming the variable when a value is malformed.
   [[nodiscard]] static Config from_env();

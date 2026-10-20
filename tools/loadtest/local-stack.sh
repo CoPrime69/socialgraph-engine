@@ -20,7 +20,9 @@ DB_POOL_SIZE=${DB_POOL_SIZE:-16}
 GATEWAY_IMAGE=${GATEWAY_IMAGE:-nginx:1.27-alpine}
 mkdir -p "$RUN_DIR"
 
-db_url() { echo "${PG_ADMIN_URL%/*}/$1"; }
+# Plain TCP to PostgreSQL, as in deploy/docker-compose.yml (the official image runs without TLS);
+# a local server with ssl=on would otherwise negotiate TLS on every pooled connection.
+db_url() { echo "${PG_ADMIN_URL%/*}/$1?sslmode=${PG_SSLMODE:-disable}"; }
 
 stop() {
   docker rm -f sg-bench-gateway >/dev/null 2>&1 || true
