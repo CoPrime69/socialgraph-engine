@@ -28,6 +28,11 @@ to seconds.
   (`HTTP_WORKER_THREADS`, default 32) and hand the response back to the event loop. analytics-service
   handlers only read immutable in-memory snapshots and run inline on the event loops; its requests
   with `?min_version`, which may wait for a newer snapshot, still go to the pool.
+* graph-service and content-service reads start inline too, because most are cache hits
+  (ADR-0010). A handler about to block, on a cache miss, calls `sg::common::require_worker()`: on an
+  event loop it abandons the run and the server runs the handler again from the start on the pool;
+  anywhere else it returns. Everything before the call must be safe to repeat (it is: token checks
+  and cache lookups). Writes start on the pool (`offload = is_write`).
 * cpp-httplib's `Client` stays for the few service-to-service calls and the `healthcheck` subcommands.
 * **nlohmann/json**, **libsodium**, **libpqxx**, **hiredis** – all from distro packages, so builds are
   reproducible offline from the Ubuntu 24.04 package set (Dockerfile and CI install the same list).
@@ -37,6 +42,10 @@ A rough spike on a shared 4-vCPU VM, so indicative only: a hello-world JSON rout
 with 64 connections answered about 39k requests/s on cpp-httplib (8-thread pool) and about 155k
 requests/s on Drogon (4 I/O threads). This is not a benchmark of the services, whose handlers do
 real work.
+
+On the full mixed workload ([performance.md](../performance.md)), the switch took the same build
+from about 1,900 to 3,800–4,300 requests/s in short probe runs, and removed the thread-switching
+overhead (22 % system time) that had become the limit.
 
 ## Alternatives
 * **cpp-httplib** (the previous choice) – a small, simple blocking server. Replaced because of the
@@ -54,7 +63,9 @@ real work.
   one server per process and quits the engine when that server stops. Tests that create servers
   one after another get ephemeral ports from a few spare listeners created at start-up.
 * Code on an event loop must never block. Blocking handlers are the default; running inline is an
-  explicit per-service choice.
+  explicit per-service choice, and an inline handler that can block must call `require_worker()`
+  first. The retry signal is not a `std::exception`, so handlers that catch broadly must not use
+  `catch (...)` around it.
 * The engine's own limits are process-wide: request bodies above `max(max_body_bytes, 1 MiB)` are
   refused by Drogon with a bare 413 before reaching the server (smaller excess gets the JSON 413).
 * The distribution's `DrogonConfig.cmake` requires the development packages of every database

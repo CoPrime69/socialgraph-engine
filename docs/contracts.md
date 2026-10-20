@@ -124,7 +124,7 @@ after a mutation) and otherwise answers with what it has plus header `X-Graph-St
 
 | Method & path | Response |
 |---------------|----------|
-| `GET /api/v1/analytics/summary` | `{ graph_version, users, connections, density, average_degree, components, largest_component, communities, modularity, computed_at, compute_ms }` |
+| `GET /api/v1/analytics/summary` | `{ graph_version, users, connections, density, average_degree, components, largest_component, communities, modularity, betweenness_approximate, computed_at, compute_ms, centrality_graph_version, centrality_computed_at }`; the last two say which graph version PageRank, betweenness, closeness and communities were computed on, and when (they can trail `graph_version` by up to `ANALYTICS_FULL_REFRESH_MS`, ADR-0012) |
 | `GET /api/v1/analytics/influencers?metric=pagerank\|betweenness\|closeness\|degree&limit=10` | `{ graph_version, metric, items: [ { rank, user: UserRef, score } ] }` |
 | `GET /api/v1/analytics/communities` | `{ graph_version, modularity, items: [ { id, size, dominant_category, dominant_branch, members: [UserRef] } ] }` sorted by size desc |
 | `GET /api/v1/analytics/graph?limit=1500[&focus=ID&depth=1\|2]` | `{ graph_version, total_nodes, total_edges, nodes: [ { id, handle, name, category, branch, reputation, community, pagerank, degree } ], edges: [ { source, target, strength } ] }` — top `limit` users by PageRank (default 1500, max 100000), or the ego network of `focus` up to `depth` hops (most influential first, capped by `limit`); edges are those induced by the returned nodes |
@@ -264,6 +264,11 @@ first_interaction_at, last_interaction_at }`. `GET /users` gains `sort=reputatio
 carry the full `UserProfile`; `connection.added` carries `strength`.
 Strength: member-created connection = affinity (§8); imported = `round3(0.5·affinity + 0.5·(1 − e^(−interactions/3)))`
 (precomputed in `connections.csv`).
+
+Freshness (ADR-0010): after a connect or disconnect, the replica that handled it serves both
+members' profiles and connection lists from the new state immediately; other replicas follow when
+the `connection.*` event reaches them. `GET /users` shows current connection counts, but a member who
+just joined can take up to `GRAPH_SEARCH_CACHE_TTL_MS` (default 30 s) to appear in search results.
 
 ### 10.6 New: content-service (port 8084, DB `content`)
 Owns questions, answers, comments, badges, tags and per-user tag expertise (read-only, imported), plus

@@ -5,15 +5,20 @@ The original program was a single console executable mixing I/O, persistence and
 first plan (see `docs/roadmap.md`) proposed a modular monolith. The project owner asked for the
 system to be split into highly decoupled microservices.
 
-The domain has three responsibilities with different change rates and resource profiles:
+The domain has four responsibilities with different change rates and resource profiles:
 * **Identity** – credentials and token issuing; security-sensitive, tiny data, CPU spikes from Argon2id.
 * **Graph** – the system of record for profiles and connections; transactional writes.
 * **Analytics** – CPU/memory-heavy derived computations (O(V·E) betweenness); read-only.
+* **Content** – the imported Stack Overflow questions, answers, comments, badges and tags behind each
+  member's activity; large (hundreds of thousands of rows), read-only after import, full-text search.
 
 ## Decision
-Three C++ services, each owning its data, plus an nginx gateway:
+Four C++ services, each owning its data, plus an nginx gateway:
 `identity-service` (DB `identity`), `graph-service` (DB `graph`), `analytics-service` (no DB; derived
-in-memory state). No service reads another's database. State propagates through events
+in-memory state), `content-service` (DB `content`). Content was added when the real dataset came in:
+its tables are larger than everything else combined and never change after import, so keeping them
+out of the graph database keeps the write path's database small and lets content be cached
+without invalidation (ADR-0010). No service reads another's database. State propagates through events
 (ADR-0004); the only synchronous service-to-service call is analytics bootstrapping from
 graph-service's snapshot endpoint. Tokens are verified locally (ADR-0005), so identity is never on
 the request path of other services.
