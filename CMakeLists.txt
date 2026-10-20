@@ -14,6 +14,7 @@ set(SG_SANITIZE "" CACHE STRING "Sanitizers to enable, e.g. address,undefined or
 
 include(cmake/Warnings.cmake)
 include(cmake/Sanitizers.cmake)
+include(cmake/Allocator.cmake)
 
 find_package(Threads REQUIRED)
 find_package(nlohmann_json 3.10 REQUIRED)

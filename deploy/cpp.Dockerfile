@@ -10,7 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       g++ cmake ninja-build pkg-config \
       libdrogon-dev libjsoncpp-dev libcpp-httplib-dev nlohmann-json3-dev libpqxx-dev libpq-dev \
-      libsodium-dev libhiredis-dev libgtest-dev libbenchmark-dev ca-certificates \
+      libsodium-dev libhiredis-dev libgtest-dev libbenchmark-dev libmimalloc-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY CMakeLists.txt CMakePresets.json ./
@@ -27,7 +27,7 @@ FROM ${UBUNTU} AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libdrogon1t64 libtrantor1 libjsoncpp25 libcpp-httplib0.14t64 libpqxx-7.8t64 libpq5 libsodium23 \
-      libhiredis1.1.0 ca-certificates \
+      libhiredis1.1.0 libmimalloc2.0 ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --no-create-home socialgraph
 USER 10001

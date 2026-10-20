@@ -22,6 +22,7 @@ sg_set_warnings(sg_graph_service_core)
 add_executable(graph-service src/main.cpp)
 target_link_libraries(graph-service PRIVATE sg_graph_service_core)
 sg_set_warnings(graph-service)
+sg_use_allocator(graph-service)
 install(TARGETS graph-service RUNTIME DESTINATION bin)
 
 if(SG_BUILD_TESTS)

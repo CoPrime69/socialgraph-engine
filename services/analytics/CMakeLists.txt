@@ -10,6 +10,7 @@ sg_set_warnings(sg_analytics_lib)
 add_executable(analytics-service src/main.cpp)
 target_link_libraries(analytics-service PRIVATE sg_analytics_lib)
 sg_set_warnings(analytics-service)
+sg_use_allocator(analytics-service)
 install(TARGETS analytics-service RUNTIME DESTINATION bin)
 
 if(SG_BUILD_TESTS)

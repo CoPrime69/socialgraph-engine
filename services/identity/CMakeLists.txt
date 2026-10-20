@@ -16,6 +16,7 @@ sg_set_warnings(sg_identity_core)
 add_executable(identity-service src/main.cpp)
 target_link_libraries(identity-service PRIVATE sg_identity_core)
 sg_set_warnings(identity-service)
+sg_use_allocator(identity-service)
 install(TARGETS identity-service RUNTIME DESTINATION bin)
 
 if(SG_BUILD_TESTS)

@@ -10,6 +10,7 @@ sg_set_warnings(sg_content_lib)
 add_executable(content-service src/main.cpp)
 target_link_libraries(content-service PRIVATE sg_content_lib)
 sg_set_warnings(content-service)
+sg_use_allocator(content-service)
 install(TARGETS content-service RUNTIME DESTINATION bin)
 
 if(SG_BUILD_TESTS)
