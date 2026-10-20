@@ -1,7 +1,7 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { authResponse } from '../test/fixtures';
-import { backend } from '../test/mockBackend';
+import { backend, PASSWORD } from '../test/mockBackend';
 import { renderApp } from '../test/render';
 import { SESSION_STORAGE_KEY, sessionStore } from './sessionStore';
 
@@ -41,6 +41,22 @@ describe('Protected routes and the session lifecycle', () => {
     await waitFor(() => {
       expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
     });
+  });
+
+  it('opens the overview after signing out and back in', async () => {
+    const { user, router } = renderApp('/people');
+    await screen.findByRole('heading', { level: 1, name: 'People' });
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+    await screen.findByText('You have been signed out.');
+
+    await user.type(screen.getByLabelText('Handle'), 'ada_member');
+    await user.type(screen.getByLabelText('Password'), PASSWORD);
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Network overview' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/');
   });
 
   it('ends the session when the token expires', async () => {
