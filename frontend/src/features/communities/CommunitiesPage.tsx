@@ -69,7 +69,7 @@ export function CommunitiesPage() {
       <LoadingState label="Loading communities…">
         <div className={styles.grid}>
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} height="14rem" radius="14px" />
+            <Skeleton key={i} height="7rem" radius="4px" />
           ))}
         </div>
       </LoadingState>

@@ -2,7 +2,7 @@
 
 A social network analyzer rebuilt as a production-style system: four C++20 microservices behind an
 nginx gateway, PostgreSQL per service, Redis Streams for events, and a React + TypeScript front
-end. It runs on real data, the first months of Stack Overflow (August–December 2008: about 18,600
+end. It runs on real data, the first months of Stack Overflow (August-December 2008: about 18,600
 members, 205,000 interaction edges, 57,000 questions, 208,000 answers), and answers the original
 project's questions: who the influencers are, which communities exist, whom to connect with next,
 and how far apart two people are.
@@ -53,7 +53,7 @@ All service contracts (routes, payloads, events, error envelope) are in
 | Connections | Connect and disconnect, with strength from shared expertise; every change is a versioned event |
 | Influencers | PageRank, betweenness (Brandes, sampled above 5,000 nodes), closeness, degree |
 | Communities | Louvain modularity optimisation, deterministic |
-| Recommendations | Friends-of-friends (Adamic–Adar) blended with expertise affinity, with reasons |
+| Recommendations | Friends-of-friends (Adamic-Adar) blended with expertise affinity, with reasons |
 | Degrees of separation | Bidirectional BFS between any two members |
 | Activity | Each member's Stack Overflow questions, answers, tags and badges; questions by tag and full-text search |
 | Visualisation | Interactive network and ego-network graphs in the browser |
@@ -129,6 +129,6 @@ check, unit tests with coverage and production build.
 
 ## Data
 
-Stack Overflow data dump, August–December 2008, licensed CC BY-SA 4.0 by Stack Exchange Inc. and
+Stack Overflow data dump, August-December 2008, licensed CC BY-SA 4.0 by Stack Exchange Inc. and
 its contributors. Details and the mapping to the social-network model are in
 [`docs/dataset.md`](docs/dataset.md).

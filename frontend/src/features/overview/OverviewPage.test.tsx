@@ -44,8 +44,8 @@ describe('Overview', () => {
       '99.6%',
     );
     expect(within(tiles).getByText('18,571 people · 37 separate groups')).toBeInTheDocument();
-    expect(screen.getByText(/Graph version 41 · analytics computed/)).toHaveTextContent(
-      /in 2,840 ms$/,
+    expect(screen.getByText(/Graph version 41\. Analytics computed/)).toHaveTextContent(
+      /in 2,840 ms\.$/,
     );
   });
 
@@ -132,12 +132,12 @@ describe('Overview', () => {
 
   it('draws the network graph and offers the same people as a table', async () => {
     const { user } = await openOverview();
-    const card = screen.getByRole('region', { name: 'Network graph' });
+    const card = screen.getByRole('region', { name: 'Network map' });
     const canvas = await within(card).findByRole('img', {
       name: /most influential of 18,649 people/,
     });
     expect(canvas).toHaveAccessibleDescription(/Drag to pan/);
-    expect(within(card).getByText('Graph version 41')).toBeInTheDocument();
+    expect(within(card).queryByText(/Graph version/)).not.toBeInTheDocument();
     expect(backend.lastRequest('/api/v1/analytics/graph')?.query.get('limit')).toBe('1500');
 
     await user.selectOptions(within(card).getByLabelText('People shown'), '500');

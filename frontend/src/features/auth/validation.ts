@@ -38,7 +38,7 @@ export function validateHandle(raw: string): string | undefined {
   const value = normalizeHandle(raw);
   if (value === '') return 'Enter a handle.';
   if (!HANDLE_PATTERN.test(value)) {
-    return 'Use 3–32 characters: lowercase letters, numbers or underscores.';
+    return 'Use 3-32 characters: lowercase letters, numbers or underscores.';
   }
   return undefined;
 }

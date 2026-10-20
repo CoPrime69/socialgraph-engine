@@ -23,7 +23,7 @@ namespace {
 
 constexpr std::int64_t kMigrationLockKey = 0x5347'4d49'4743;  // "SGMIGC"
 
-constexpr std::string_view kUsage = R"(content-service — questions, answers, comments, badges and tags (contracts §10.6)
+constexpr std::string_view kUsage = R"(content-service: questions, answers, comments, badges and tags (contracts §10.6)
 
 Usage: content-service [serve|migrate|seed|healthcheck|--help]
 

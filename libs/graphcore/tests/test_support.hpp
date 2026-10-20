@@ -2,7 +2,7 @@
 
 // Graph builders, independent brute-force reference implementations and seed-data loading
 // shared by the graphcore tests. The references deliberately use different data structures
-// (dense matrices, Floyd–Warshall) from the library so they can catch its mistakes.
+// (dense matrices, Floyd-Warshall) from the library so they can catch its mistakes.
 
 #include <cstddef>
 #include <cstdint>
@@ -25,23 +25,23 @@ CsrGraph star_graph(std::size_t n);                           // centre 0, leave
 CsrGraph complete_graph(std::size_t n);
 CsrGraph two_cliques_with_bridge(std::size_t clique_size);    // K_s on 0..s-1 and s..2s-1, bridge (s-1, s)
 CsrGraph ring_of_cliques(std::size_t cliques, std::size_t clique_size);  // clique i linked to i+1
-/// Erdős–Rényi G(n, p) drawn with SplitMix64(seed).
+/// Erdős-Rényi G(n, p) drawn with SplitMix64(seed).
 CsrGraph random_graph(std::size_t n, double p, std::uint64_t seed);
 
 // ---- references -----------------------------------------------------------------------------
 inline constexpr int kUnreachable = -1;
 
-/// All-pairs hop distances by Floyd–Warshall on a dense matrix (-1 = unreachable).
+/// All-pairs hop distances by Floyd-Warshall on a dense matrix (-1 = unreachable).
 std::vector<std::vector<int>> floyd_warshall(const CsrGraph& g);
 
 /// PageRank by power iteration on the explicit dense Google matrix (dangling columns uniform).
 std::vector<double> dense_pagerank(const CsrGraph& g, double damping, int iterations);
 
 /// Betweenness by brute force: for every pair s < t and every v, add σ_sv·σ_vt/σ_st when v lies on
-/// a shortest s–t path. Path counts σ come from a DP over the Floyd–Warshall distances.
+/// a shortest s-t path. Path counts σ come from a DP over the Floyd-Warshall distances.
 std::vector<double> brute_force_betweenness(const CsrGraph& g, bool normalized);
 
-/// Wasserman–Faust closeness from Floyd–Warshall distances.
+/// Wasserman-Faust closeness from Floyd-Warshall distances.
 std::vector<double> reference_closeness(const CsrGraph& g);
 
 /// Q = 1/(2m) Σ_ij [A_ij − γ k_i k_j / 2m] δ(c_i, c_j) on the dense weighted adjacency matrix.

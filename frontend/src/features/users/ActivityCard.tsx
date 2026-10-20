@@ -39,7 +39,7 @@ export function ActivityCard({ userId, name, source }: ActivityCardProps) {
     body = (
       <LoadingState label="Loading Stack Overflow activity…">
         <div className={styles.skeletonRows}>
-          <Skeleton height="5rem" radius="10px" />
+          <Skeleton height="5rem" radius="4px" />
           <Skeleton height="1.75rem" width="70%" />
           <Skeleton height="3rem" />
           <Skeleton height="3rem" />
@@ -98,7 +98,7 @@ function ActivityDetails({ activity }: { activity: UserActivity }) {
         <StatTile
           label="Badges"
           value={formatInteger(badgeCount)}
-          detail={`${formatInteger(badges.gold)} gold · ${formatInteger(badges.silver)} silver · ${formatInteger(badges.bronze)} bronze`}
+          detail={`${formatInteger(badges.gold)} gold, ${formatInteger(badges.silver)} silver, ${formatInteger(badges.bronze)} bronze`}
         />
       </StatGrid>
 

@@ -10,8 +10,8 @@ independently. Any change to an endpoint, event or shared library signature must
 | `identity-service` (C++) | 8081 | `identity` DB: accounts, outbox | Registration, password verification, issuing signed access tokens |
 | `graph-service` (C++) | 8082 | `graph` DB: profiles, connections, graph_meta, outbox | User profiles and the connection graph (write model, source of truth) |
 | `analytics-service` (C++) | 8083 | none (derived in-memory read model) | Influencers, communities, recommendations, degrees of separation, graph export |
-| `gateway` (nginx) | 8080 | — | Single public entry point, serves the SPA, routes `/api/v1/*`, rate-limits auth, hides `/internal/*` |
-| `web` (React SPA) | — | — | Built static assets served by the gateway |
+| `gateway` (nginx) | 8080 | n/a | Single public entry point, serves the SPA, routes `/api/v1/*`, rate-limits auth, hides `/internal/*` |
+| `web` (React SPA) | n/a | n/a | Built static assets served by the gateway |
 
 Infrastructure: PostgreSQL 16 (one database per service, separate roles), Redis 7 (Streams as the event bus).
 
@@ -56,7 +56,7 @@ Rules:
 | 503 | `unavailable` | Dependency down / read model not ready |
 | 500 | `internal` | Anything unexpected (no internals leaked) |
 
-* Pagination: `limit` (1–100, default 20) and `offset` (≥ 0, default 0); list responses are
+* Pagination: `limit` (1-100, default 20) and `offset` (≥ 0, default 0); list responses are
   `{ "items": [...], "total": N, "limit": L, "offset": O }`.
 * Health: every service exposes `GET /healthz` (process alive → `{"status":"ok"}`) and
   `GET /readyz` (dependencies reachable → 200 `{"status":"ready"}` or 503).
@@ -66,9 +66,9 @@ Rules:
 * `category` ∈ `Engineering`, `Finance`, `HR`, `Marketing`, `Sales`
 * `branch` ∈ `software`, `electrical`, `accounting`, `human resources`, `marketing`, `sales`
 * `handle`: `^[a-z0-9_]{3,32}$` (stored lower-case, unique)
-* `name`: 1–64 characters after trimming, no control characters
-* `password`: 8–128 bytes
-* `influence`: number 0–100 (stored with 2 decimals)
+* `name`: 1-64 characters after trimming, no control characters
+* `password`: 8-128 bytes
+* `influence`: number 0-100 (stored with 2 decimals)
 
 ## 4. identity-service API
 
@@ -127,7 +127,7 @@ after a mutation) and otherwise answers with what it has plus header `X-Graph-St
 | `GET /api/v1/analytics/summary` | `{ graph_version, users, connections, density, average_degree, components, largest_component, communities, modularity, betweenness_approximate, computed_at, compute_ms, centrality_graph_version, centrality_computed_at }`; the last two say which graph version PageRank, betweenness, closeness and communities were computed on, and when (they can trail `graph_version` by up to `ANALYTICS_FULL_REFRESH_MS`, ADR-0012) |
 | `GET /api/v1/analytics/influencers?metric=pagerank\|betweenness\|closeness\|degree&limit=10` | `{ graph_version, metric, items: [ { rank, user: UserRef, score } ] }` |
 | `GET /api/v1/analytics/communities` | `{ graph_version, modularity, items: [ { id, size, dominant_category, dominant_branch, members: [UserRef] } ] }` sorted by size desc |
-| `GET /api/v1/analytics/graph?limit=1500[&focus=ID&depth=1\|2]` | `{ graph_version, total_nodes, total_edges, nodes: [ { id, handle, name, category, branch, reputation, community, pagerank, degree } ], edges: [ { source, target, strength } ] }` — top `limit` users by PageRank (default 1500, max 100000), or the ego network of `focus` up to `depth` hops (most influential first, capped by `limit`); edges are those induced by the returned nodes |
+| `GET /api/v1/analytics/graph?limit=1500[&focus=ID&depth=1\|2]` | `{ graph_version, total_nodes, total_edges, nodes: [ { id, handle, name, category, branch, reputation, community, pagerank, degree } ], edges: [ { source, target, strength } ] }`: top `limit` users by PageRank (default 1500, max 100000), or the ego network of `focus` up to `depth` hops (most influential first, capped by `limit`); edges are those induced by the returned nodes |
 | `GET /api/v1/analytics/graph.dot` | Graphviz DOT text (`text/vnd.graphviz`), nodes coloured by community |
 | `GET /api/v1/me/recommendations?limit=10` | `{ graph_version, items: [ { user: UserRef, score, mutual_connections, reasons: { adamic_adar, affinity, same_category, same_branch, same_community } } ] }` |
 | `GET /api/v1/paths?to=ID[&from=ID]` (`from` defaults to caller) | `{ graph_version, found, degrees, path: [UserRef] }` (`degrees` = edges on the path, `null` if not found) |
@@ -175,7 +175,7 @@ publishes unpublished rows in id order with `XADD` and marks them published.
 * **Louvain edge weight** = `0.5 + 0.5·strength` (structure dominates, attributes refine).
 * **Recommendation score** for non-neighbour `v` of `u`:
   `0.55·AA(u,v)/max AA + 0.35·affinity(u,v) + 0.10·[same community]`, where AA is the
-  Adamic–Adar index over common neighbours. Ties broken by smaller id.
+  Adamic-Adar index over common neighbours. Ties broken by smaller id.
 * **Seed graph**: `data/seed/users.csv` (the original 100 users). Users are grouped by
   (category, branch); each user draws `avg_degree/2` edges, inside its group with probability
   `1 − μ`, else uniformly; `avg_degree = 8`, `μ = 0.2`, seed `20241109`. Deterministic across
@@ -207,9 +207,9 @@ C++ conventions: C++20, `-Wall -Wextra -Wpedantic -Werror` in CI, no `using name
 RAII everywhere (no owning raw pointers), errors as exceptions inside services
 (`sg::common::ApiError`), GoogleTest for tests (`ctest` discovers them).
 
-## 10. Real dataset — contract v2 (SUPERSEDES §3 taxonomy, §4 register body, §5 shapes and §8 seed where they conflict)
+## 10. Real dataset: contract v2 (SUPERSEDES §3 taxonomy, §4 register body, §5 shapes and §8 seed where they conflict)
 
-The toy 100-user CSV is replaced by a real dataset: **Stack Overflow, Aug–Dec 2008** (Stack Exchange
+The toy 100-user CSV is replaced by a real dataset: **Stack Overflow, Aug-Dec 2008** (Stack Exchange
 data dump via the ClickHouse public mirror, CC BY-SA 4.0). Users are the 18,648 people who interacted
 in that period; a **connection** is a real interaction (one answered the other's question or commented
 on the other's post), aggregated per pair (~205k connections). Files live in `data/stackoverflow/`
@@ -220,9 +220,9 @@ in `data/stackoverflow/manifest.json`).
 ### 10.1 Files
 | file | columns |
 |------|---------|
-| `categories.csv` | `slug, name, description` — 10 technology domains, e.g. `web`, "Web Development" |
-| `branches.csv` | `name, category_slug` — the curated primary-technology tags (e.g. `python, scripting`) |
-| `users.csv` | `id, handle, display_name, reputation, influence, created_at, last_access_at, location, website_url, about, views, up_votes, down_votes, category, branch` (`category` = category **name**, `branch` = branch name; `influence` = reputation percentile 0–100, 2 dp) |
+| `categories.csv` | `slug, name, description`: 10 technology domains, e.g. `web`, "Web Development" |
+| `branches.csv` | `name, category_slug`: the curated primary-technology tags (e.g. `python, scripting`) |
+| `users.csv` | `id, handle, display_name, reputation, influence, created_at, last_access_at, location, website_url, about, views, up_votes, down_votes, category, branch` (`category` = category **name**, `branch` = branch name; `influence` = reputation percentile 0-100, 2 dp) |
 | `connections.csv` | `user_a, user_b, interactions, first_interaction_at, last_interaction_at, strength` (`user_a < user_b`) |
 | `tags.csv` | `name, question_count, category_slug` (category may be empty) |
 | `questions.csv` | `id, owner_id, created_at, title, tags, score, view_count, answer_count, comment_count, favorite_count, accepted_answer_id, closed_at` (`tags` space-separated; `owner_id` empty when the owner is not in users.csv) |
@@ -250,7 +250,7 @@ dataset; `GET /api/v1/meta/taxonomy` returns `{ "categories": [names...], "branc
 `POST /auth/register` body is `{ handle, name, password, category, branch }` (+ optional `location`,
 `about` ≤ 500 chars). `influence` is no longer accepted from clients (ignored if sent). The
 `user.registered` payload becomes `{ user_id, handle, name, category, branch, location, about }`.
-identity does not seed the 18,648 imported users (they are profiles, not accounts — they cannot sign in);
+identity does not seed the 18,648 imported users (they are profiles, not accounts; they cannot sign in);
 it seeds only the demo account.
 
 ### 10.5 Changes to graph-service (§5)

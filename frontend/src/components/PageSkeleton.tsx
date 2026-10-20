@@ -11,7 +11,7 @@ export function PageSkeleton({ label = 'Loading page…' }: { label?: string }) 
         <Skeleton width="24rem" height="1rem" />
         <div className={styles.tiles}>
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} height="5.5rem" radius="10px" />
+            <Skeleton key={i} height="5.5rem" radius="4px" />
           ))}
         </div>
         <Skeleton height="18rem" radius="14px" />

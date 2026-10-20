@@ -1,7 +1,7 @@
 {
   "dataset": "stackoverflow-2008",
   "license": "CC BY-SA 4.0",
-  "attribution": "Stack Exchange, Inc. and Stack Overflow contributors — Stack Exchange Data Dump",
+  "attribution": "Stack Exchange, Inc. and Stack Overflow contributors, Stack Exchange Data Dump",
   "source": {
     "posts": "s3://datasets-documentation/stackoverflow/parquet/posts/2008.parquet (region eu-west-3, anonymous)",
     "comments": "s3://datasets-documentation/stackoverflow/parquet/comments/2008.parquet (region eu-west-3, anonymous)",

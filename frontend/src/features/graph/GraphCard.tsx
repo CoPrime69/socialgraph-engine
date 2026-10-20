@@ -156,7 +156,7 @@ export function GraphCard({
       />
     ) : (
       <LoadingState label="Loading the network graph…">
-        <Skeleton height={size === 'lg' ? '28rem' : '20rem'} radius="10px" />
+        <Skeleton height={size === 'lg' ? '28rem' : '20rem'} radius="4px" />
       </LoadingState>
     );
   } else if (data.nodes.length === 0 || (scope.kind === 'ego' && data.nodes.length <= 1)) {
@@ -228,14 +228,7 @@ export function GraphCard({
       description={description}
       toolbar={toolbar}
       busy={graph.isPlaceholderData && graph.isFetching}
-      footer={
-        data ? (
-          <span>
-            Graph version {formatInteger(data.graph_version)}
-            {data.stale ? ' · updating with your latest changes…' : ''}
-          </span>
-        ) : undefined
-      }
+      footer={data?.stale ? 'Updating with your latest changes…' : undefined}
     >
       {body}
     </Card>

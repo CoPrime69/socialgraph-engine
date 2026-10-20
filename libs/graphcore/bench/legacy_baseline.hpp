@@ -1,7 +1,7 @@
 #pragma once
 
 // The "before" of the benchmarks: a faithful re-implementation of the legacy data structures and
-// algorithms of legacy/cpp files/connection_manager.cpp — users as heap objects with string ids
+// algorithms of legacy/cpp files/connection_manager.cpp: users as heap objects with string ids
 // (getters return copies), the graph as unordered_map<string, vector<string>>, and
 // calculatePageRank / calculateBetweennessCentrality / calculateClosenessCentrality /
 // GraphTraversal::bfsPath with their original logic, defects included (closeness is +inf,
@@ -45,7 +45,7 @@ class User {
 /// The parts of legacy ConnectionManager that the benchmarks compare against.
 class ConnectionManager {
  public:
-  /// Builds `users` and the string-keyed `connections` (both directions, no duplicates — the
+  /// Builds `users` and the string-keyed `connections` (both directions, no duplicates: the
   /// same simple graph the new library sees).
   explicit ConnectionManager(const BenchGraph& source);
 

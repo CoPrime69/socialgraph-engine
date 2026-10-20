@@ -11,8 +11,8 @@ security headers (CSP, nosniff, frame denial) and logs JSON. Authentication stay
 (ADR-0005), so the gateway holds no secrets.
 
 ## Alternatives
-* **Custom C++ gateway** – more code to secure and maintain for features nginx already has.
-* **Envoy/Traefik** – richer (retries, circuit breaking, mTLS) but heavier to configure; worth it with
+* **Custom C++ gateway**: more code to secure and maintain for features nginx already has.
+* **Envoy/Traefik**: richer (retries, circuit breaking, mTLS) but heavier to configure; worth it with
   a service mesh, not for three services.
 
 ## Consequences

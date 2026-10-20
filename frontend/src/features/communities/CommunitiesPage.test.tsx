@@ -136,7 +136,7 @@ describe('Communities', () => {
     await screen.findByRole('article', { name: 'Community 100' });
     expect(screen.getAllByRole('article')).toHaveLength(12);
     const pagination = screen.getByRole('navigation', { name: 'Pagination' });
-    expect(pagination).toHaveTextContent('Showing 1–12 of 14 communities');
+    expect(pagination).toHaveTextContent('Showing 1-12 of 14 communities');
 
     await user.click(within(pagination).getByRole('button', { name: 'Next' }));
     expect(

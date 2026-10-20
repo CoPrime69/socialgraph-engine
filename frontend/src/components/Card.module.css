@@ -1,8 +1,12 @@
+/*
+ * A panel: a raised surface held by a hairline and a faint stacked shadow, on the near-white
+ * canvas. Panels group content that belongs together; page headers and figures sit outside them.
+ */
 .card {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -13,7 +17,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-5) var(--space-5) 0;
+  padding: var(--space-5) var(--space-6) 0;
 }
 
 .titles {
@@ -23,11 +27,14 @@
 }
 
 .title {
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-heading);
 }
 
 .description {
+  max-width: 44rem;
   font-size: var(--text-sm);
+  letter-spacing: var(--tracking-small);
   color: var(--color-text-secondary);
 }
 
@@ -44,18 +51,38 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5) 0;
+  padding: var(--space-4) var(--space-6) 0;
 }
 
 .body {
   flex: 1;
   min-width: 0;
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--space-4) var(--space-6) var(--space-6);
   transition: opacity var(--duration-normal) var(--ease-standard);
 }
 
+/* Full-bleed content (tables): rows run edge to edge and line up with the panel's padding. */
 .flush {
   padding: var(--space-3) 0 0;
+}
+
+.flush table th:first-child,
+.flush table td:first-child {
+  padding-left: var(--space-6);
+}
+
+.flush table th:last-child,
+.flush table td:last-child {
+  padding-right: var(--space-6);
+}
+
+.flush table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.flush nav[aria-label='Pagination'] {
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
 }
 
 .busy {
@@ -63,7 +90,7 @@
 }
 
 .footer {
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   border-top: 1px solid var(--color-border);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
@@ -84,6 +111,14 @@
   }
 
   .flush {
-    padding: var(--space-3) 0 0;
+    padding: var(--space-2) 0 0;
+  }
+
+  .flush nav[aria-label='Pagination'] {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .footer {
+    padding: var(--space-3) var(--space-4);
   }
 }

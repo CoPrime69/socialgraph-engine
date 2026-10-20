@@ -19,8 +19,8 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
           <span className={styles.brandName}>SocialGraph</span>
         </div>
         <p className={styles.tagline}>
-          Explore who drives the conversation in a real developer community — and who you should
-          meet next.
+          See who drives the conversation in a real developer community, and who you should meet
+          next.
         </p>
         <ul className={styles.points}>
           <li>Rank influencers by PageRank, betweenness, closeness or degree.</li>

@@ -34,7 +34,7 @@ to seconds.
   anywhere else it returns. Everything before the call must be safe to repeat (it is: token checks
   and cache lookups). Writes start on the pool (`offload = is_write`).
 * cpp-httplib's `Client` stays for the few service-to-service calls and the `healthcheck` subcommands.
-* **nlohmann/json**, **libsodium**, **libpqxx**, **hiredis** – all from distro packages, so builds are
+* **nlohmann/json**, **libsodium**, **libpqxx**, **hiredis**: all from distro packages, so builds are
   reproducible offline from the Ubuntu 24.04 package set (Dockerfile and CI install the same list).
 
 ## Measurements
@@ -44,16 +44,16 @@ requests/s on Drogon (4 I/O threads). This is not a benchmark of the services, w
 real work.
 
 On the full mixed workload ([performance.md](../performance.md)), the switch took the same build
-from about 1,900 to 3,800–4,300 requests/s in short probe runs, and removed the thread-switching
+from about 1,900 to 3,800-4,300 requests/s in short probe runs, and removed the thread-switching
 overhead (22 % system time) that had become the limit.
 
 ## Alternatives
-* **cpp-httplib** (the previous choice) – a small, simple blocking server. Replaced because of the
+* **cpp-httplib** (the previous choice), a small, simple blocking server. Replaced because of the
   thread-per-connection behaviour described above; raising the pool size only moves the limit and
   costs a thread stack per idle connection.
-* **Boost.Beast/Asio** – maximal control and async I/O, but several hundred lines of protocol plumbing
+* **Boost.Beast/Asio**: maximal control and async I/O, but several hundred lines of protocol plumbing
   (parsing limits, keep-alive, pipelining, timeouts) before the first route.
-* **gRPC between services** – there is only one synchronous internal call (snapshot), so the cost of
+* **gRPC between services**: there is only one synchronous internal call (snapshot), so the cost of
   protobuf toolchains isn't justified; events carry the rest.
 
 ## Consequences

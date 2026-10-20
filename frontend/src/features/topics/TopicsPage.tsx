@@ -150,7 +150,7 @@ export function TopicsPage() {
       <LoadingState label="Loading questions…">
         <div className={styles.skeletonList}>
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} height="4.5rem" radius="10px" />
+            <Skeleton key={i} height="4.5rem" radius="4px" />
           ))}
         </div>
       </LoadingState>
@@ -206,7 +206,7 @@ export function TopicsPage() {
             <TextField
               label="Find a tag"
               type="search"
-              placeholder="e.g. python"
+              placeholder="e.g. python…"
               autoComplete="off"
               spellCheck={false}
               value={tagFilter}

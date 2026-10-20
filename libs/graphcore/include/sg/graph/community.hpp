@@ -55,7 +55,7 @@ struct CommunityResult {
 /// memory.
 [[nodiscard]] CommunityResult louvain(const CsrGraph& g, const LouvainOptions& opts = {});
 
-/// Newman–Girvan modularity of a partition of a weighted graph:
+/// Newman-Girvan modularity of a partition of a weighted graph:
 /// Q = Σ_c [ L_c / m − γ · (K_c / 2m)² ], with L_c the weight of edges inside c, K_c the sum of
 /// the weighted degrees in c and m the total edge weight. Community labels are arbitrary
 /// 32-bit values. Returns 0 when the graph has no edge weight.

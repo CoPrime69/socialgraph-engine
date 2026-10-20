@@ -1,4 +1,4 @@
-# Dataset: Stack Overflow, August–December 2008
+# Dataset: Stack Overflow, August-December 2008
 
 The original project ran on a hand-written CSV of 100 fictional users whose connections were
 regenerated at random on every start. The rebuilt system runs on a real social network instead: the

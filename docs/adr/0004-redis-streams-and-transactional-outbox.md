@@ -18,16 +18,16 @@ Losing or reordering events would silently corrupt the analytics read model.
   duplicate is skipped and a gap triggers a resync from the snapshot endpoint.
 
 ## Alternatives
-* **Synchronous HTTP calls** (identity → graph on register, graph → analytics on change) – couples
+* **Synchronous HTTP calls** (identity → graph on register, graph → analytics on change), which couples
   availability (registration fails if graph is down) and loses changes on partial failure.
-* **Kafka** – the right tool at large scale, but heavy to operate for this workload.
-* **NATS JetStream / RabbitMQ** – good fits; Redis was chosen because hiredis is a small, stable,
+* **Kafka**: the right tool at large scale, but heavy to operate for this workload.
+* **NATS JetStream / RabbitMQ**: good fits; Redis was chosen because hiredis is a small, stable,
   distro-packaged C client and Streams provide ordering, consumer groups and replay.
-* **PostgreSQL LISTEN/NOTIFY** – notifications are lost while a consumer is disconnected.
+* **PostgreSQL LISTEN/NOTIFY**: notifications are lost while a consumer is disconnected.
 
 ## Consequences
 * (+) No dual-write problem: an event exists if and only if its transaction committed.
 * (+) Consumers recover after downtime by replaying from their last position.
 * (−) Streams grow without trimming in this version; trimming is safe for analytics (gap ⇒ resync)
-  and for graph-service once entries are acknowledged — listed as future work.
+  and for graph-service once entries are acknowledged; this is listed as future work.
 * (−) Redis must be persistent (`appendonly yes` in Compose) to avoid losing unconsumed events.

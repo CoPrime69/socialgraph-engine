@@ -6,7 +6,7 @@ consumes `identity.events`.
 
 | Route | Auth | Response |
 |-------|------|----------|
-| `GET /api/v1/meta/taxonomy` | – | `{ categories: [names], branches: [names], branch_categories: { branch: category } }`, display order |
+| `GET /api/v1/meta/taxonomy` | none | `{ categories: [names], branches: [names], branch_categories: { branch: category } }`, display order |
 | `GET /api/v1/users?q=&category=&branch=&sort=&min_reputation=&limit=&offset=` | Bearer | `{ items: [UserProfile + connection_count], total, limit, offset }` |
 | `GET /api/v1/users/{id}` | Bearer | `UserProfile + connection_count`; 404 |
 | `GET /api/v1/me/profile` | Bearer | the caller's profile; 404 while it is being provisioned after registration |
@@ -14,14 +14,14 @@ consumes `identity.events`.
 | `POST /api/v1/me/connections` `{ "user_id": N }` | Bearer | `201` connection item + `graph_version`; 404 unknown user, 409 already connected, 422 self |
 | `DELETE /api/v1/me/connections/{user_id}` | Bearer | `{ graph_version }`; 404 when not connected |
 | `GET /internal/v1/snapshot` | internal | `{ graph_version, users: [UserProfile], edges: [[a, b, strength]] }` (one REPEATABLE READ snapshot) |
-| `GET /healthz`, `GET /readyz` | – | liveness; readiness = PostgreSQL reachable |
+| `GET /healthz`, `GET /readyz` | none | liveness; readiness = PostgreSQL reachable |
 
 `UserProfile` = `{ id, handle, name, category, branch, influence, reputation, location, website_url,
 about, views, up_votes, down_votes, source, external_url, created_at, last_access_at }`.
-For the full dataset the snapshot is about 12.7 MB of JSON and is served in 0.6–0.9 s.
+For the full dataset the snapshot is about 12.7 MB of JSON and is served in 0.6-0.9 s.
 `/users` parameters: `q` is a case-insensitive substring of handle or name (≤ 100 characters; `%`
 and `_` match literally), `category`/`branch` must exist in the taxonomy (400 otherwise),
-`sort=reputation` (default, desc) | `name` | `id`, ties by id; `min_reputation` ≥ 0; `limit` 1–100
+`sort=reputation` (default, desc) | `name` | `id`, ties by id; `min_reputation` ≥ 0; `limit` 1-100
 (default 20), `offset` ≥ 0. Every other malformed parameter is `400 bad_request`.
 
 ## Data model
@@ -80,8 +80,8 @@ dataset (18,648 users, 204,650 connections) imports in about 5 s (5.1 s RelWithD
 | Variable | Default | |
 |----------|---------|---|
 | `GRAPH_PORT` | `8082` | |
-| `GRAPH_DATABASE_URL` | – | required for `serve`, `migrate`, `seed` |
-| `AUTH_PUBLIC_KEY` | – | identity's base64 Ed25519 public key, required for `serve` |
+| `GRAPH_DATABASE_URL` | none | required for `serve`, `migrate`, `seed` |
+| `AUTH_PUBLIC_KEY` | none | identity's base64 Ed25519 public key, required for `serve` |
 | `REDIS_HOST` / `REDIS_PORT` | `127.0.0.1` / `6379` | |
 | `SEED_ON_EMPTY` | `true` | |
 | `SEED_DIR` | `data/stackoverflow` | images mount the dataset at `/data/stackoverflow` |

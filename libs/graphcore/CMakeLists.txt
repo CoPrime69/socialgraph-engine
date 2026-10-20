@@ -1,4 +1,4 @@
-# sg::graphcore — pure C++20 graph algorithms (no I/O). See README.md.
+# sg::graphcore: pure C++20 graph algorithms (no I/O). See README.md.
 
 add_library(sg_graphcore STATIC
   src/affinity.cpp

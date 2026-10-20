@@ -1,4 +1,4 @@
-# Phase 2 — Plan and implementation roadmap
+# Phase 2: Plan and implementation roadmap
 
 ## Target architecture (microservices, revised)
 
@@ -35,9 +35,9 @@ HTTP contracts and events. The authoritative contract is [`contracts.md`](contra
 | Graph storage | Compressed sparse row (CSR) snapshot, dense `uint32` ids | O(V+E) memory |
 | PageRank | Power iteration, uniform dangling redistribution, L1 tolerance | O(k(V+E)) |
 | Betweenness | Brandes, parallel over sources; optional pivot sampling for large graphs | O(VE) exact |
-| Closeness | BFS per node, Wasserman–Faust normalisation for disconnected graphs, parallel | O(V(V+E)) |
+| Closeness | BFS per node, Wasserman-Faust normalisation for disconnected graphs, parallel | O(V(V+E)) |
 | Communities | Louvain (weighted modularity), deterministic | ~O(E log V) in practice |
-| Recommendations | Friends-of-friends Adamic–Adar + attribute affinity, top-k selection | O(Σ deg² of neighbourhood + k log k) |
+| Recommendations | Friends-of-friends Adamic-Adar + attribute affinity, top-k selection | O(Σ deg² of neighbourhood + k log k) |
 | Degrees of separation | Bidirectional BFS | O(b^(d/2)) |
 
 ## API (v1, JSON)

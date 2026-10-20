@@ -70,6 +70,12 @@
   background-repeat: no-repeat;
 }
 
+/* Native option lists follow the theme (Windows draws them with system colours otherwise). */
+.select option {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
 .textarea {
   min-height: 6rem;
   resize: vertical;

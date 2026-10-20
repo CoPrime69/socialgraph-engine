@@ -2,34 +2,43 @@
  * Design tokens. Every colour used by the app (including the canvas graph, which reads these
  * custom properties at draw time) is defined here, once for light and once for dark.
  *
- * Contrast (WCAG 2.x) was computed, not eyeballed:
- *   text on surface ≥ 7:1, secondary ≥ 7:1, muted ≥ 4.5:1, accent text ≥ 5:1,
- *   button labels on accent/danger fills ≥ 5:1, input borders and focus rings ≥ 3:1.
+ * The system follows the Vercel design language (awesome-design-md/vercel): near-white canvas,
+ * #171717 ink, a neutral grey ladder with hairline dividers, Geist at weights 400/500/600 with
+ * negative tracking on headings, and saturated colour only for data (community colours, medals).
+ * Two deliberate departures, both for accessibility: links use Vercel's deeper link blue
+ * (#0761d1) because #0070f3 is 4.4:1 on the canvas, and input borders are a darker grey so form
+ * fields meet the 3:1 non-text contrast minimum.
+ * Contrast (WCAG 2.x) was computed in both themes: text >= 15:1, secondary >= 7.9:1,
+ * muted >= 5.5:1, links >= 5.5:1, focus ring >= 3:1, tag text on tag fill >= 5:1,
+ * button labels on ink >= 15:1, input borders >= 3:1.
  * The categorical series palette (community colours) is the validated reference palette:
- * adjacent-pair CVD ΔE ≥ 8 and normal-vision ΔE ≥ 15 in both modes. Three light-mode slots
+ * adjacent-pair CVD dE >= 8 and normal-vision dE >= 15 in both modes. Three light-mode slots
  * sit below 3:1 against the surface, so every coloured mark is paired with a text label
- * (legend, tooltip, table view) — colour never carries identity alone.
+ * (legend, tooltip, table view); colour never carries identity alone.
  */
 
 :root {
   color-scheme: light dark;
 
-  /* Typography */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Typography: Geist (self-hosted, see main.tsx). Weight 600 is the ceiling. */
+  --font-sans: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
   --text-3xl: 2rem;
-  --leading-tight: 1.25;
+  --leading-tight: 1.2;
   --leading-normal: 1.5;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
-  --weight-bold: 700;
+  --weight-bold: 600;
+  --tracking-display: -0.04em;
+  --tracking-heading: -0.03em;
+  --tracking-small: -0.02em;
 
   /* Spacing (4 px grid) */
   --space-1: 0.25rem;
@@ -42,17 +51,17 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* Shape */
+  /* Shape rule: controls 6px, panels 8px, badges and tags are pills, people and data marks are
+     circles. Nothing else gets a radius. */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-pill: 999px;
 
   /* Layout */
-  --sidebar-width: 14.5rem;
-  --header-height: 3.5rem;
+  --header-height: 4rem;
   --bottom-nav-height: 4rem;
-  --content-max: 82rem;
+  --content-max: 80rem;
   --control-height: 2.5rem;
   --control-height-sm: 2rem;
 
@@ -68,37 +77,46 @@
   --z-toast: 60;
 
   /* ---------- Light theme ---------- */
-  --color-page: #f9f9f7;
-  --color-surface: #fcfcfb;
-  --color-surface-raised: #ffffff;
-  --color-surface-sunken: #f1f0ec;
-  --color-text: #0b0b0b;
-  --color-text-secondary: #52514e;
-  --color-text-muted: #6f6d68;
-  --color-border: #e1e0d9;
-  --color-border-strong: #8f8d86;
-  --color-accent: #256abf;
-  --color-accent-hover: #1c5cab;
-  --color-accent-contrast: #ffffff;
-  --color-accent-soft: #eef4fc;
-  --color-accent-soft-text: #1c5cab;
-  --color-focus: #256abf;
-  --color-danger: #b42323;
-  --color-danger-hover: #9a1c1c;
-  --color-danger-contrast: #ffffff;
-  --color-danger-soft: #fdeeee;
-  --color-success: #006300;
-  --color-success-soft: #e9f6e9;
-  --color-warning: #8a5a00;
-  --color-warning-soft: #fff6e0;
-  --color-overlay: rgb(11 11 11 / 0.45);
-  --skeleton-base: #ecebe6;
-  --skeleton-shine: #f6f5f1;
-  --shadow-sm: 0 1px 2px rgb(11 11 11 / 0.06);
-  --shadow-md: 0 4px 16px rgb(11 11 11 / 0.08);
-  --shadow-lg: 0 16px 40px rgb(11 11 11 / 0.18);
+  --color-page: #fafafa; /* canvas */
+  --color-surface: #fafafa;
+  --color-surface-raised: #fdfdfd; /* panels, inputs, menus, the header */
+  --color-surface-sunken: #f2f2f2; /* hover fills, segmented tracks, avatars */
+  --color-text: #171717; /* ink */
+  --color-text-secondary: #4d4d4d;
+  --color-text-muted: #666666;
+  --color-border: #ebebeb; /* hairline */
+  --color-border-control: #d6d6d6; /* secondary buttons, segmented controls, badges */
+  --color-border-strong: #8f8f8f; /* input boundaries (3:1) */
+  --color-rule-heavy: #171717;
+  --color-accent: #171717; /* primary actions and selection are ink */
+  --color-accent-hover: #383838;
+  --color-accent-contrast: #fdfdfd;
+  --color-accent-soft: #f2f2f2;
+  --color-accent-soft-text: #171717;
+  --color-link: #0761d1;
+  --color-focus: #0070f3;
+  --color-tag: #ebf4ff;
+  --color-tag-text: #0761d1;
+  --color-tag-edge: #d3e5ff;
+  --color-danger: #c50000;
+  --color-danger-hover: #a30000;
+  --color-danger-contrast: #fdfdfd;
+  --color-danger-soft: #fdecec;
+  --color-success: #107d32;
+  --color-success-soft: #e7f5ea;
+  --color-warning: #ab570a;
+  --color-warning-soft: #fff4e0;
+  --color-overlay: rgb(0 0 0 / 0.4);
+  --skeleton-base: #ededed;
+  --skeleton-shine: #f5f5f5;
+  /* Stacked, low-opacity shadows (never one heavy drop) */
+  --shadow-sm: 0 1px 1px rgb(0 0 0 / 0.02), 0 2px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 2px 2px rgb(0 0 0 / 0.04), 0 8px 16px -4px rgb(0 0 0 / 0.04);
+  --shadow-lg:
+    0 1px 1px rgb(0 0 0 / 0.02), 0 8px 16px -4px rgb(0 0 0 / 0.04),
+    0 24px 32px -8px rgb(0 0 0 / 0.06);
 
-  /* Data visualisation — categorical slots (fixed order, never cycled) */
+  /* Data visualisation: categorical slots (fixed order, never cycled) */
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
@@ -108,14 +126,14 @@
   --series-7: #6250d6;
   --series-8: #e34948;
   --series-other: #8f8d86;
-  /* Sequential (single hue) for meters and score bars */
-  --meter-track: #cde2fb;
-  --meter-fill: #2a78d6;
+  /* Meters and score bars: an ink bar on a hairline baseline, no filled track */
+  --meter-fill: #171717;
   /* Network graph chrome */
-  --graph-edge: #8f8d86;
-  --graph-ring: #fcfcfb;
-  --graph-highlight: #0b0b0b;
-  --graph-you: #256abf;
+  --graph-plate: #fdfdfd;
+  --graph-edge: #8f8f8f;
+  --graph-ring: #fdfdfd;
+  --graph-highlight: #171717;
+  --graph-you: #0761d1;
   /* Stack Overflow badge classes (decorative dots; always paired with a text label) */
   --medal-gold: #d4a017;
   --medal-silver: #a3a7ab;
@@ -124,35 +142,41 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-page: #0d0d0d;
-    --color-surface: #1a1a19;
-    --color-surface-raised: #232321;
-    --color-surface-sunken: #141413;
-    --color-text: #f0efec;
-    --color-text-secondary: #c3c2b7;
-    --color-text-muted: #9d9b94;
-    --color-border: #2c2c2a;
-    --color-border-strong: #6b6a64;
-    --color-accent: #86b6ef;
-    --color-accent-hover: #9ec5f4;
-    --color-accent-contrast: #0b0b0b;
-    --color-accent-soft: #1f2a38;
-    --color-accent-soft-text: #86b6ef;
-    --color-focus: #86b6ef;
-    --color-danger: #f08080;
-    --color-danger-hover: #f49a9a;
-    --color-danger-contrast: #0b0b0b;
-    --color-danger-soft: #3a1d1d;
-    --color-success: #4cc24c;
-    --color-success-soft: #13261a;
-    --color-warning: #fab219;
-    --color-warning-soft: #2e2510;
+    --color-page: #0a0a0a;
+    --color-surface: #0a0a0a;
+    --color-surface-raised: #111111;
+    --color-surface-sunken: #1c1c1c;
+    --color-text: #ededed;
+    --color-text-secondary: #a1a1a1;
+    --color-text-muted: #8f8f8f;
+    --color-border: #262626;
+    --color-border-control: #3a3a3a;
+    --color-border-strong: #737373;
+    --color-rule-heavy: #ededed;
+    --color-accent: #ededed;
+    --color-accent-hover: #fdfdfd;
+    --color-accent-contrast: #0a0a0a;
+    --color-accent-soft: #1f1f1f;
+    --color-accent-soft-text: #ededed;
+    --color-link: #52a8ff;
+    --color-focus: #52a8ff;
+    --color-tag: #0d1f33;
+    --color-tag-text: #6cb6ff;
+    --color-tag-edge: #173a5e;
+    --color-danger: #ff6166;
+    --color-danger-hover: #ff8589;
+    --color-danger-contrast: #0a0a0a;
+    --color-danger-soft: #331314;
+    --color-success: #5fd07f;
+    --color-success-soft: #10291a;
+    --color-warning: #f5a623;
+    --color-warning-soft: #2e2210;
     --color-overlay: rgb(0 0 0 / 0.6);
-    --skeleton-base: #262624;
-    --skeleton-shine: #302f2c;
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 16px rgb(0 0 0 / 0.45);
-    --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
+    --skeleton-base: #1a1a1a;
+    --skeleton-shine: #242424;
+    --shadow-sm: 0 0 0 1px rgb(255 255 255 / 0.02);
+    --shadow-md: 0 2px 2px rgb(0 0 0 / 0.3), 0 8px 16px -4px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 8px 16px -4px rgb(0 0 0 / 0.5), 0 24px 32px -8px rgb(0 0 0 / 0.6);
 
     --series-1: #3987e5;
     --series-2: #d95926;
@@ -163,11 +187,11 @@
     --series-7: #9085e9;
     --series-8: #e66767;
     --series-other: #6b6a64;
-    --meter-track: #0d366b;
-    --meter-fill: #5598e7;
-    --graph-edge: #9d9b94;
-    --graph-ring: #1a1a19;
-    --graph-highlight: #f0efec;
-    --graph-you: #86b6ef;
+    --meter-fill: #ededed;
+    --graph-plate: #111111;
+    --graph-edge: #8f8f8f;
+    --graph-ring: #111111;
+    --graph-highlight: #ededed;
+    --graph-you: #52a8ff;
   }
 }

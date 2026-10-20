@@ -8,7 +8,7 @@
 namespace sg::graph {
 
 /// Attributes of a user that the domain formulas use. `category` and `branch` are dense codes
-/// (e.g. the index in the shared taxonomy); `influence` is on the 0–100 scale.
+/// (e.g. the index in the shared taxonomy); `influence` is on the 0-100 scale.
 struct Profile {
   std::uint16_t category;
   std::uint16_t branch;

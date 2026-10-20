@@ -1,4 +1,4 @@
-# sg::common — shared runtime of the C++ services (HTTP server, JSON logging, config, errors,
+# sg::common: shared runtime of the C++ services (HTTP server, JSON logging, config, errors,
 # Ed25519 tokens, password hashing, PostgreSQL pool + migrations, Redis Streams, transactional outbox).
 
 # The HTTP server runs on Drogon (libdrogon-dev). Only src/http.cpp includes Drogon headers, so it is

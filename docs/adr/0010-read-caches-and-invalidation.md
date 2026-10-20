@@ -43,16 +43,16 @@ concurrent requests rarely contend on one lock.
   (ADR-0002).
 
 ## Alternatives
-* **Redis as a shared cache** – one copy for all replicas, but every hit becomes a network round
+* **Redis as a shared cache**: one copy for all replicas, but every hit becomes a network round
   trip and a deserialisation, which is most of what a hit is meant to avoid. Coherence via events
   works the same either way. Worth revisiting if memory per replica becomes the limit.
-* **Time-based expiry for member data** – simpler, but a member who connects to someone would see
+* **Time-based expiry for member data**: simpler, but a member who connects to someone would see
   their old connection list until it expires. Event invalidation gives read-your-writes on the
   replica that wrote and second-scale staleness elsewhere.
-* **Invalidating search pages per member** – a page lists up to 100 members, so every write would
+* **Invalidating search pages per member**: a page lists up to 100 members, so every write would
   have to find all pages containing either member. Caching ids and hydrating from member entries
   gives the same freshness for counts without that index.
-* **HTTP caching in nginx** – responses are per user (Authorization), so a shared proxy cache would
+* **HTTP caching in nginx**: responses are per user (Authorization), so a shared proxy cache would
   need careful keying; the services already know exactly when their data changes.
 
 ## Consequences

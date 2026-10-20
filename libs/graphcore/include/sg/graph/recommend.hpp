@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file recommend.hpp
-/// Connection recommendations: friends-of-friends structure (Adamic–Adar) + attribute affinity.
+/// Connection recommendations: friends-of-friends structure (Adamic-Adar) + attribute affinity.
 
 #include <cstddef>
 #include <cstdint>
@@ -16,7 +16,7 @@ namespace sg::graph {
 /// Options of recommend(). The weights default to contracts.md §8.
 struct RecommendOptions {
   std::size_t limit = 10;      ///< Maximum number of recommendations returned.
-  double w_structural = 0.55;  ///< Weight of the normalised Adamic–Adar index.
+  double w_structural = 0.55;  ///< Weight of the normalised Adamic-Adar index.
   double w_affinity = 0.35;    ///< Weight of affinity().
   double w_community = 0.10;   ///< Weight of [same community].
 };
@@ -42,7 +42,7 @@ struct Recommendation {
 /// attribute affinity (plus community). `membership` may be empty (no community term). The
 /// `limit` best candidates are returned by score descending, ties broken by smaller node id.
 ///
-/// The Adamic–Adar sums live in a per-thread scratch area that grows to the largest graph queried
+/// The Adamic-Adar sums live in a per-thread scratch area that grows to the largest graph queried
 /// on that thread; a query resets only the entries it touched, so repeated queries allocate
 /// nothing proportional to V (only the returned vector and a heap of `limit` entries).
 ///

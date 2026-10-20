@@ -17,20 +17,20 @@ OpenMP).
 
 | Operation | sg::graph | Legacy | Speed-up |
 |---|---:|---:|---:|
-| Load `users.csv.gz` + `connections.csv.gz` (zlib streaming, CSV parse, CSR build) | 171 ms | — | — |
+| Load `users.csv.gz` + `connections.csv.gz` (zlib streaming, CSV parse, CSR build) | 171 ms | n/a | n/a |
 | Build the in-memory graph from parsed rows | 9.24 ms | 24.6 ms | 2.7× |
 | PageRank, one iteration | 504 µs | 54.3 ms | 108× |
-| PageRank, full run | 22.7 ms (45 iterations to L1 change ≤ 1e-10) | 217 ms (4 iterations, stops unconverged) | — |
+| PageRank, full run | 22.7 ms (45 iterations to L1 change ≤ 1e-10) | 217 ms (4 iterations, stops unconverged) | n/a |
 | Betweenness, cost per source, 1 thread | 3.28 ms | 138 ms | 42× |
 | Betweenness, cost per source, 4 threads | 0.907 ms | 138 ms (1 thread) | 153× |
 | **Betweenness, exact, all 18,648 sources** | **16.9 s** (4 threads); ≈ 61 s (1 thread, extrapolated) | ≈ 43 min (extrapolated) | ≈ 153× |
-| Betweenness, 256 sampled pivots | 839 ms (1 thread), 243 ms (4 threads) | — | — |
+| Betweenness, 256 sampled pivots | 839 ms (1 thread), 243 ms (4 threads) | n/a | n/a |
 | **Closeness, all 18,648 sources** | **771 ms** (1 thread), **187 ms** (4 threads) | ≈ 21 min (extrapolated), and every value is +∞ | 1,621× (1 thread) |
 | **Shortest path ("degrees of separation"), one query** | **0.95 µs** | 50.7 ms | 53,290× |
-| Louvain communities | 59.5 ms → 42 communities, modularity 0.3231 | no graph-based equivalent | — |
-| Recommendations for one user (top 10) | 267 µs | not comparable | — |
-| BFS distances from one source | 828 µs | — | — |
-| Connected components | 890 µs | — | — |
+| Louvain communities | 59.5 ms → 42 communities, modularity 0.3231 | no graph-based equivalent | n/a |
+| Recommendations for one user (top 10) | 267 µs | not comparable | n/a |
+| BFS distances from one source | 828 µs | n/a | n/a |
+| Connected components | 890 µs | n/a | n/a |
 
 What the ratios mean: PageRank and betweenness run the same algorithm on the same graph on both
 sides, so their ratios are the cost of string-keyed hash maps and per-node heap objects versus
@@ -66,8 +66,8 @@ Statistics computed by `graphcore_bench --stats` (the interaction counts by a sh
 | Property | Value |
 |---|---|
 | Nodes / edges | 18,648 / 204,650 (density 0.00118) |
-| Degree | min 1, median 7, **mean 21.95**, p90 54, p99 215, **max 1,360** — heavy-tailed |
-| Degree distribution | 1: 2,581 nodes · 2: 1,836 · 3–4: 2,520 · 5–8: 3,063 · 9–16: 2,987 · 17–32: 2,452 · 33–64: 1,738 · 65–128: 970 · 129–256: 375 · 257–512: 104 · 513–1,024: 20 · 1,025–2,048: 2 |
+| Degree | min 1, median 7, **mean 21.95**, p90 54, p99 215, **max 1,360**, heavy-tailed |
+| Degree distribution | 1: 2,581 nodes · 2: 1,836 · 3-4: 2,520 · 5-8: 3,063 · 9-16: 2,987 · 17-32: 2,452 · 33-64: 1,738 · 65-128: 970 · 129-256: 375 · 257-512: 104 · 513-1,024: 20 · 1,025-2,048: 2 |
 | Isolated nodes | 0 |
 | Connected components | 5; the largest holds 18,640 nodes (99.96 %) |
 | Distances (BFS from 256 random sources) | mean 3.29 hops, largest seen 7 |
@@ -87,7 +87,7 @@ BFS length) and the top-10 recommendations of 8 users (brute force of the contra
 
 The synthetic graphs (`make_synthetic(n)` in `bench/dataset.cpp`) put n nodes into ⌊n/32⌋ random
 groups (branch = group mod 73, category = branch mod 10, mirroring the 73 branches and 10
-categories of the real taxonomy; influence uniform on 0–100), draw edges with
+categories of the real taxonomy; influence uniform on 0-100), draw edges with
 `generate_homophilous_edges` (average degree 10, μ = 0.2) and weight them with
 `connection_strength`. Unlike the real graph their degrees are narrow and their node ids are
 random with respect to structure:
@@ -145,13 +145,13 @@ so2008 with 1 or 2 threads: ≈ 61 s and ≈ 38 s); closeness on 100k is run wit
 |---|---:|---:|---:|---:|
 | CSR build from edge list | 9.24 ms | 62.6 µs | 1.17 ms | 29.3 ms |
 | PageRank (to L1 change ≤ 1e-10) | 22.7 ms (45 it.) | 349 µs (56 it.) | 7.61 ms (56 it.) | 112 ms (56 it.) |
-| Betweenness exact, 1 thread | — | 90.2 ms | 10.4 s | — |
-| Betweenness exact, 2 threads | — | 51.1 ms | 5.78 s | — |
-| Betweenness exact, 4 threads | 16.9 s | 27.5 ms | 3.03 s | — |
-| Betweenness 256 pivots, 1 thread | 839 ms | — | 264 ms | 4.69 s |
-| Betweenness 256 pivots, 2 threads | 517 ms | — | 161 ms | 2.53 s |
-| Betweenness 256 pivots, 4 threads | 243 ms | — | 81.1 ms | 1.22 s |
-| Closeness, all sources, 1 thread | 771 ms | 1.55 ms | 210 ms | — |
+| Betweenness exact, 1 thread | n/a | 90.2 ms | 10.4 s | n/a |
+| Betweenness exact, 2 threads | n/a | 51.1 ms | 5.78 s | n/a |
+| Betweenness exact, 4 threads | 16.9 s | 27.5 ms | 3.03 s | n/a |
+| Betweenness 256 pivots, 1 thread | 839 ms | n/a | 264 ms | 4.69 s |
+| Betweenness 256 pivots, 2 threads | 517 ms | n/a | 161 ms | 2.53 s |
+| Betweenness 256 pivots, 4 threads | 243 ms | n/a | 81.1 ms | 1.22 s |
+| Closeness, all sources, 1 thread | 771 ms | 1.55 ms | 210 ms | n/a |
 | Closeness, all sources, 4 threads | 187 ms | 623 µs | 58.9 ms | 6.29 s |
 | Louvain | 59.5 ms | 1.26 ms | 14.3 ms | 222 ms |
 | Recommendations, one user | 267 µs | 11.3 µs | 81.9 µs | 835 µs |
@@ -200,7 +200,7 @@ extrapolations (§8).
 | 100k | Shortest path, one query | 18.7 µs | 424 ms | 22,672× |
 
 The PageRank comparison is per iteration because the legacy stopping rule (every node's absolute
-change ≤ 1e-4, tightened by 0.9 per round down to 1e-6) is met after 1–4 iterations, when scores
+change ≤ 1e-4, tightened by 0.9 per round down to 1e-6) is met after 1-4 iterations, when scores
 are around 1/n and still far from converged; the library iterates to an L1 change ≤ 1e-10. Full
 legacy runs took 217 ms (so2008, 4 iterations), 2.19 ms (1k, 3), 33.8 ms (10k, 2) and 696 ms
 (100k, 1).
@@ -215,20 +215,20 @@ tests `Betweenness.ThreadCountDoesNotChangeASingleBit`,
 | Run | 1 thread | 2 threads | 4 threads | 2 / 4 threads speed-up |
 |---|---:|---:|---:|---:|
 | so2008, 256 pivots | 839 ms | 517 ms | 243 ms | 1.6× / 3.5× |
-| so2008, exact (per-source cost vs. the 1-thread pivot run) | 3.28 ms/source | — | 0.907 ms/source (16.9 s) | — / 3.6× |
+| so2008, exact (per-source cost vs. the 1-thread pivot run) | 3.28 ms/source | n/a | 0.907 ms/source (16.9 s) | n/a / 3.6× |
 | 1k, exact | 90.2 ms | 51.1 ms | 27.5 ms | 1.8× / 3.3× |
 | 10k, exact | 10.4 s | 5.78 s | 3.03 s | 1.8× / 3.4× |
 | 10k, 256 pivots | 264 ms | 161 ms | 81.1 ms | 1.6× / 3.3× |
 | 100k, 256 pivots | 4.69 s | 2.53 s | 1.22 s | 1.9× / 3.8× |
-| Closeness, so2008 | 771 ms | — | 187 ms | — / 4.1× |
-| Closeness, 10k | 210 ms | — | 58.9 ms | — / 3.6× |
-| Closeness, 1k | 1.55 ms | — | 623 µs | — / 2.5× |
+| Closeness, so2008 | 771 ms | n/a | 187 ms | n/a / 4.1× |
+| Closeness, 10k | 210 ms | n/a | 58.9 ms | n/a / 3.6× |
+| Closeness, 1k | 1.55 ms | n/a | 623 µs | n/a / 2.5× |
 
-Betweenness reaches 81–96 % parallel efficiency on 4 threads. Where the remaining time goes was not
+Betweenness reaches 81-96 % parallel efficiency on 4 threads. Where the remaining time goes was not
 profiled; the known overheads of the design are the fork/join per round (blocks are processed in
 rounds of 8 blocks per thread so that the ordered merge needs bounded memory) and threads idling at
 the end of a round. Closeness on 1k is too small to scale (16 sweeps of 64 sources). The closeness
-4.1× on so2008 is above 4 because the 1-thread repetitions varied (713–774 ms, CV 4.5 %); the
+4.1× on so2008 is above 4 because the 1-thread repetitions varied (713-774 ms, CV 4.5 %); the
 single-process run described in §8 measured 721 ms and 194 ms (3.7×). Only 4 vCPUs were
 available, so scaling beyond 4 threads was not measured.
 
@@ -247,7 +247,7 @@ available, so scaling beyond 4 threads was not measured.
   by *other* processes during the run (machine busy time from `/proc/stat` minus the benchmark's
   own `getrusage` time) and repeats the run, up to 8 times and 20 s apart, while that exceeded
   0.15 CPU on average (+0.2 s). The idle background of the VM was ≈ 0.05 CPU. All 72 benchmarks
-  ended with an accepted run (the 21:20–21:32 UTC run rejected 9 attempts in total, the recommend
+  ended with an accepted run (the 21:20-21:32 UTC run rejected 9 attempts in total, the recommend
   re-run 1).
   The recommendation rows were re-measured at 21:33 UTC after `recommend()` switched to a
   per-thread scratch area; that change touched only `src/recommend.cpp`.
@@ -269,15 +269,15 @@ V = nodes, E = undirected edges, k = sources or iterations, t = threads, L = BFS
 
 | Operation | sg::graph | Legacy | Nature of the gap |
 |---|---|---|---|
-| Storage | CSR: (V + 1) offsets (8 B) + 2E neighbour ids (4 B) + 2E weights (8 B); so2008: 4.8 MiB | `unordered_map<string, vector<string>>` plus a heap `User` with six strings per node | — |
+| Storage | CSR: (V + 1) offsets (8 B) + 2E neighbour ids (4 B) + 2E weights (8 B); so2008: 4.8 MiB | `unordered_map<string, vector<string>>` plus a heap `User` with six strings per node | n/a |
 | Build | O(V + E) for sorted input (counting sort by source; a list is sorted only when it is not already), O(V + E log d_max) worst case | O(V + E) hash inserts and string copies | constant factor |
 | PageRank, one iteration | O(V + E) sequential array pulls | O(V + E) hash lookups (two per half-edge), one map insert and string copy per node | constant factor |
 | Betweenness, one source | O(V + E): 16-byte node state, predecessors recognised by `dist[v] == dist[w] − 1` (no lists), reset in O(reached) | O(V + E) hash operations, a vector of strings per node for predecessors, an O(V) map rebuilt per source | constant factor |
 | Betweenness, all sources | O(V·E) time, O(t·V) memory, parallel, deterministic | O(V·E), single-threaded | + t-way parallelism |
 | Closeness, all sources | O(⌈V/64⌉ · L · (V + E)) word operations: 64 sources per sweep | O(V · (V + E)) hash operations | algorithmic |
 | Shortest path, one query | bidirectional BFS: O(b^(d/2)) typical, O(V + E) worst | full BFS of the component on every query | algorithmic |
-| Communities | Louvain: O(V + E) per local-moving pass, a few passes per level | attribute sorting, not graph-based (audit §4.3) | — |
-| Recommendations | O(V log limit + Σ_{z ∈ N(u)} deg z), per-thread scratch | attribute filter (audit §4.4) | — |
+| Communities | Louvain: O(V + E) per local-moving pass, a few passes per level | attribute sorting, not graph-based (audit §4.3) | n/a |
+| Recommendations | O(V log limit + Σ_{z ∈ N(u)} deg z), per-thread scratch | attribute filter (audit §4.4) | n/a |
 
 The measurements follow these bounds. Per-source betweenness cost tracks E: 90 µs (1k), 1.04 ms
 (10k) and 18.3 ms (100k) single-threaded. The 100k step is ~1.8× steeper than E grows, most likely
@@ -300,7 +300,7 @@ needs (distances up to 9 were seen on that graph).
 * **Run-to-run variation.** Between the two full runs (§8) the library's single-threaded results
   differed by up to 18 % (Louvain on so2008: 70.1 vs 59.5 ms), the legacy code's by up to 1.7×
   (PageRank on so2008: 85.4 vs 54.3 ms per iteration; graph build: 42.8 vs 24.6 ms). Four later
-  spot checks of legacy PageRank on so2008, each in a fresh process, gave 66–85 ms per iteration.
+  spot checks of legacy PageRank on so2008, each in a fresh process, gave 66-85 ms per iteration.
   The cause was not isolated: the legacy code is allocation-heavy (strings, hash nodes) and so
   sensitive to heap layout, and other jobs shared the VM. The published legacy PageRank and
   graph-build values are the lowest we observed, so those speed-ups are at the conservative end.

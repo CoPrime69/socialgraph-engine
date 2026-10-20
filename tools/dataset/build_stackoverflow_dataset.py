@@ -216,7 +216,7 @@ def build(out_dir: Path) -> None:
 
     log("writing files")
     manifest = {"dataset": "stackoverflow-2008", "license": "CC BY-SA 4.0",
-                "attribution": "Stack Exchange, Inc. and Stack Overflow contributors — Stack Exchange Data Dump",
+                "attribution": "Stack Exchange, Inc. and Stack Overflow contributors, Stack Exchange Data Dump",
                 "source": {k: f"s3://{v} (region {REGION}, anonymous)" for k, v in SOURCES.items()},
                 "builder": "tools/dataset/build_stackoverflow_dataset.py", "files": []}
     files = manifest["files"]

@@ -1,4 +1,4 @@
-# sg::common — shared service runtime
+# sg::common: shared service runtime
 
 Static library `sg_common` (alias `sg::common`, namespace `sg::common`, headers
 `include/sg/common/*.hpp`) used by every C++ service. It holds the cross-cutting plumbing so that

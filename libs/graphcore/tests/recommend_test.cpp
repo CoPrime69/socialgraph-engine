@@ -204,7 +204,7 @@ TEST(Recommend, LimitAndCustomWeights) {
   EXPECT_EQ(recommend(g, profiles, {}, 0, opts).size(), 2U);
   opts.limit = 0;
   EXPECT_TRUE(recommend(g, profiles, {}, 0, opts).empty());
-  // Structure only: Adamic–Adar decides (3 > 4 > the rest, then id order).
+  // Structure only: Adamic-Adar decides (3 > 4 > the rest, then id order).
   opts = RecommendOptions{10, 1.0, 0.0, 0.0};
   EXPECT_EQ(nodes_of(recommend(g, profiles, {}, 0, opts)), (std::vector<NodeId>{3, 4, 5, 6}));
 }

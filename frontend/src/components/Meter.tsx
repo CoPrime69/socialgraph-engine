@@ -38,7 +38,7 @@ export function Meter({
         <span className={styles.fill} style={{ width: `${(ratio * 100).toFixed(1)}%` }} />
       </div>
       {hideValue ? null : (
-        <span className={`${styles.value} tabular-nums`} aria-hidden="true">
+        <span className={styles.value} aria-hidden="true">
           {valueText}
         </span>
       )}

@@ -12,7 +12,7 @@ referenced by id only (contracts.md §10.6).
 | `GET /api/v1/questions/{id}` | One question with its answers, accepted answer first |
 
 All routes need a bearer token issued by identity-service. Free-text parameters are trimmed,
-limited to 100 characters and may not contain control characters; `limit` is 1–100.
+limited to 100 characters and may not contain control characters; `limit` is 1-100.
 
 ## Schema
 

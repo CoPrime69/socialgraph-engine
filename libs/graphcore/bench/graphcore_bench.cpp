@@ -1,4 +1,4 @@
-// graphcore_bench — Google Benchmark suite for sg::graphcore plus the legacy baseline.
+// graphcore_bench: Google Benchmark suite for sg::graphcore plus the legacy baseline.
 //
 //   graphcore_bench [google-benchmark flags]   run the benchmarks
 //   graphcore_bench --stats                    print statistics of the benchmark graphs

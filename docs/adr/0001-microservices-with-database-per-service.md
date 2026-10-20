@@ -6,10 +6,10 @@ first plan (see `docs/roadmap.md`) proposed a modular monolith. The project owne
 system to be split into highly decoupled microservices.
 
 The domain has four responsibilities with different change rates and resource profiles:
-* **Identity** – credentials and token issuing; security-sensitive, tiny data, CPU spikes from Argon2id.
-* **Graph** – the system of record for profiles and connections; transactional writes.
-* **Analytics** – CPU/memory-heavy derived computations (O(V·E) betweenness); read-only.
-* **Content** – the imported Stack Overflow questions, answers, comments, badges and tags behind each
+* **Identity**: credentials and token issuing; security-sensitive, tiny data, CPU spikes from Argon2id.
+* **Graph**: the system of record for profiles and connections; transactional writes.
+* **Analytics**: CPU/memory-heavy derived computations (O(V·E) betweenness); read-only.
+* **Content**: the imported Stack Overflow questions, answers, comments, badges and tags behind each
   member's activity; large (hundreds of thousands of rows), read-only after import, full-text search.
 
 ## Decision
@@ -24,10 +24,10 @@ graph-service's snapshot endpoint. Tokens are verified locally (ADR-0005), so id
 the request path of other services.
 
 ## Alternatives
-* **Modular monolith** – simpler to run and debug, one transaction boundary; rejected per the owner's
+* **Modular monolith**: simpler to run and debug, one transaction boundary; rejected per the owner's
   requirement, but the internal layering (domain/app/infra/http) keeps each service small enough that
   merging them back would be mechanical.
-* **Finer split** (separate recommendation or community services) – they share one in-memory graph
+* **Finer split** (separate recommendation or community services); they share one in-memory graph
   and the same version; splitting would duplicate the read model for no isolation benefit.
 
 ## Consequences

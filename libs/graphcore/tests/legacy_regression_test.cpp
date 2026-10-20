@@ -42,7 +42,7 @@ CsrGraph seed_graph() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Audit §4.1 — closeness centrality was always infinite.
+// Audit §4.1: closeness centrality was always infinite.
 // ---------------------------------------------------------------------------------------------
 
 /// Legacy GraphTraversal::bfsDistance: `distances[to]` default-inserts 0.0 before the comparison,
@@ -105,7 +105,7 @@ TEST(LegacyRegression, Audit4_1_ClosenessIsFiniteAndCorrect) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Audit §4.2 — establishConnections created duplicate edges (a multigraph).
+// Audit §4.2: establishConnections created duplicate edges (a multigraph).
 // ---------------------------------------------------------------------------------------------
 
 TEST(LegacyRegression, Audit4_2_DuplicateEdgesAreMergedNotDoubleCounted) {
@@ -221,7 +221,7 @@ std::vector<double> legacy_betweenness(const CsrGraph& g) {
 
 TEST(LegacyRegression, BetweennessWeighsPredecessorsByPathCounts) {
   // 0 → {1,2,3}; 1,2 → 4 (σ = 2); 3 → 5 (σ = 1); 4,5 → 6 (σ = 3): node 4 carries 2/3 of the
-  // shortest 0–6 paths, not 1/2.
+  // shortest 0-6 paths, not 1/2.
   const CsrGraph g =
       testing::make_graph(7, {{0, 1}, {0, 2}, {0, 3}, {1, 4}, {2, 4}, {3, 5}, {4, 6}, {5, 6}});
   BetweennessOptions raw;
@@ -239,7 +239,7 @@ TEST(LegacyRegression, BetweennessWeighsPredecessorsByPathCounts) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Audit §4.3 — communities were random attribute chunks, different on every run.
+// Audit §4.3: communities were random attribute chunks, different on every run.
 // ---------------------------------------------------------------------------------------------
 
 TEST(LegacyRegression, Audit4_3_CommunitiesAreGraphBasedAndDeterministic) {
@@ -266,12 +266,12 @@ TEST(LegacyRegression, Audit4_3_CommunitiesAreGraphBasedAndDeterministic) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Audit §4.4 / §3 — the recommendation filter was a no-op and the scoring had dead terms.
+// Audit §4.4 / §3: the recommendation filter was a no-op and the scoring had dead terms.
 // ---------------------------------------------------------------------------------------------
 
 TEST(LegacyRegression, Audit4_4_RecommendationsUseTheUsersAttributes) {
   // A new Engineering / software user (user1's profile) without connections joins the seed
-  // network. Legacy printRecommendedConnections tested `pair.first` — the user itself — so every
+  // network. Legacy printRecommendedConnections tested `pair.first` (the user itself), so every
   // candidate passed and Sales or Finance users were suggested.
   const auto users = testing::seed_users();
   auto profiles = testing::seed_profiles(users);
@@ -293,7 +293,7 @@ TEST(LegacyRegression, Audit4_4_RecommendationsUseTheUsersAttributes) {
 
 TEST(LegacyRegression, Audit4_4_CommunityBonusAndInfluenceSimilarityAreLive) {
   // Legacy excluded same-community candidates and then added a same-community bonus that could
-  // never apply; its influence similarity 1 − min(|Δ|, 1) was 0 for any gap ≥ 1 on the 0–100 scale.
+  // never apply; its influence similarity 1 − min(|Δ|, 1) was 0 for any gap ≥ 1 on the 0-100 scale.
   const CsrGraph g = CsrGraph::from_pairs(4, {});
   const std::vector<Profile> profiles = {
       {0, 0, 50.0},  // user
@@ -315,7 +315,7 @@ TEST(LegacyRegression, Audit4_4_CommunityBonusAndInfluenceSimilarityAreLive) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Audit §4.5 / §3 — connection weights were random (mean 13.5 ± noise) with inconsistent
+// Audit §4.5 / §3: connection weights were random (mean 13.5 ± noise) with inconsistent
 // thresholds; strengths are now a pure function of the two profiles.
 // ---------------------------------------------------------------------------------------------
 
@@ -334,7 +334,7 @@ TEST(LegacyRegression, Audit4_5_ConnectionStrengthIsAPureBoundedFunction) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Audit §4.7 — parallel centrality raced on shared hash maps (hidden only because OpenMP was
+// Audit §4.7: parallel centrality raced on shared hash maps (hidden only because OpenMP was
 // never enabled). Here the parallel paths are exercised from several callers at once; the TSan
 // build of this test is the actual race check.
 // ---------------------------------------------------------------------------------------------

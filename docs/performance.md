@@ -60,7 +60,7 @@ tools/loadtest/local-stack.sh stop
 The method was the same at every step: run the workload, find where the time goes (per-process
 CPU with `top` and `perf record -a`, active statements sampled from `pg_stat_activity`, `EXPLAIN
 ANALYZE` of the hot statements), change one thing, run again. "Probe" numbers below come from
-shorter runs (20–25 s, not saved) used to compare variants on the same build; the saved runs above
+shorter runs (20-25 s, not saved) used to compare variants on the same build; the saved runs above
 are the reference.
 
 ### 1. The first build: threads waiting, not working (868 req/s)
@@ -100,7 +100,7 @@ the waiting (1,096 req/s, 504s from the gateway).
 After these, per-request work was small, and the HTTP layer was again the limit: system (kernel)
 time was 22 % of all CPU, most of it switching between hundreds of threads.
 
-### 3. Event-loop HTTP server (Drogon): 3,767–4,349 req/s probe
+### 3. Event-loop HTTP server (Drogon): 3,767-4,349 req/s probe
 
 [ADR-0002](adr/0002-cpp20-and-drogon.md) moved `sg::common::HttpServer` to Drogon. A few event-loop
 threads per process multiplex all connections; handlers that may block run on a fixed worker

@@ -10,6 +10,29 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent; /* controls show their own pressed state */
+}
+
+/* No rubber-band bounce with a mouse or trackpad; touch keeps pull-to-refresh. */
+@media (pointer: fine) {
+  html {
+    overscroll-behavior: none;
+  }
+}
+
+/* Remove the double-tap zoom delay on controls. */
+a,
+button,
+input,
+select,
+label,
+summary {
+  touch-action: manipulation;
+}
+
+/* In-page jumps (skip link, anchors) land below the sticky header. */
+[id] {
+  scroll-margin-top: calc(var(--header-height) + var(--space-4));
 }
 
 body {
@@ -44,6 +67,8 @@ h3,
 h4 {
   line-height: var(--leading-tight);
   font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
 }
 
 ul[role='list'],
@@ -76,12 +101,12 @@ button:disabled {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-underline-offset: 0.15em;
 }
 
 a:hover {
-  color: var(--color-accent-hover);
+  color: var(--color-text);
 }
 
 table {
@@ -116,10 +141,6 @@ table {
   border: 0 !important;
 }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
 .muted {
   color: var(--color-text-muted);
 }
@@ -128,8 +149,8 @@ table {
 .community-swatch {
   display: inline-block;
   flex: none;
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   background: var(--series-other);
   vertical-align: -0.05em;

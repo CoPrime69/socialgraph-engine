@@ -22,9 +22,16 @@ export function StatTile({ label, value, detail, hint }: StatTileProps) {
   );
 }
 
-export function StatGrid({ children, label }: { children: ReactNode; label: string }) {
+interface StatGridProps {
+  children: ReactNode;
+  label: string;
+  /** `row`: figures side by side; `key`: a vertical list, like the key beside a map. */
+  layout?: 'row' | 'key';
+}
+
+export function StatGrid({ children, label, layout = 'row' }: StatGridProps) {
   return (
-    <dl className={styles.grid} aria-label={label}>
+    <dl className={[styles.grid, styles[layout]].join(' ')} aria-label={label}>
       {children}
     </dl>
   );

@@ -22,7 +22,7 @@ export function ProfileGate({ children }: { children: ReactNode }) {
         <ErrorState
           error={profile.error}
           title="Your profile isn't ready yet"
-          message="We couldn't finish setting up your profile. It may still be in progress — please try again in a moment."
+          message="We couldn't finish setting up your profile. It may still be in progress, so please try again in a moment."
           onRetry={() => void profile.refetch()}
           retrying={profile.isFetching}
         />
@@ -44,7 +44,7 @@ export function ProfileGate({ children }: { children: ReactNode }) {
         <Spinner size={28} />
         <p className={styles.title}>Setting up your profile…</p>
         <p className={styles.body}>
-          Your account was created. We're adding you to the network — this usually takes a few
+          Your account was created. We're adding you to the network, which usually takes a few
           seconds.
         </p>
       </div>

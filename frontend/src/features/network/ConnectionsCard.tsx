@@ -33,7 +33,7 @@ export function ConnectionsCard() {
       <LoadingState label="Loading your connections…">
         <div className={styles.skeletonList}>
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} height="3.25rem" radius="10px" />
+            <Skeleton key={i} height="3.25rem" radius="4px" />
           ))}
         </div>
       </LoadingState>

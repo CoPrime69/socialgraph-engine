@@ -1,26 +1,21 @@
 .shell {
   display: grid;
-  grid-template-areas:
-    'header header'
-    'nav main';
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   grid-template-rows: var(--header-height) 1fr;
   min-height: 100vh;
   min-height: 100dvh;
 }
 
-/* ---------- Header ---------- */
+/* ---------- Header: wordmark, navigation, account ---------- */
 .header {
-  grid-area: header;
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: 0 var(--space-4) 0 var(--space-5);
-  background: var(--color-surface);
+  align-items: stretch;
+  gap: var(--space-8);
+  /* Header content lines up with the centred page content. */
+  padding: 0 max(var(--space-6), calc((100% - var(--content-max)) / 2 + var(--space-6)));
+  background: var(--color-surface-raised);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -28,6 +23,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  flex: none;
   color: var(--color-text);
   text-decoration: none;
 }
@@ -38,8 +34,8 @@
 
 .brandName {
   font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: -0.01em;
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-heading);
 }
 
 .account {
@@ -47,6 +43,7 @@
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+  margin-inline-start: auto;
 }
 
 .user {
@@ -87,52 +84,76 @@
   white-space: nowrap;
 }
 
-/* ---------- Navigation (sidebar on wide screens) ---------- */
+/* ---------- Navigation: text links in the header on wide screens ---------- */
 .nav {
-  grid-area: nav;
-  position: sticky;
-  top: var(--header-height);
-  align-self: start;
-  height: calc(100dvh - var(--header-height));
-  padding: var(--space-4) var(--space-3);
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  display: flex;
+  min-width: 0;
 }
 
 .navList {
-  display: grid;
+  display: flex;
+  align-items: stretch;
   gap: var(--space-1);
   margin: 0;
 }
 
+.navList li {
+  display: flex;
+}
+
 .navLink {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-height: 2.5rem;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-small);
   text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Hover shows a soft pill behind the label, as in the Vercel navigation. */
+.navLink::before {
+  content: '';
+  position: absolute;
+  inset: 50% var(--space-1) auto;
+  height: 2rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+  z-index: -1;
 }
 
 .navLink:hover {
-  background: var(--color-surface-sunken);
   color: var(--color-text);
 }
 
+.navLink:hover::before {
+  background: var(--color-surface-sunken);
+}
+
+.navIcon {
+  display: none;
+}
+
+/* The current page is marked by an ink bar on the header's bottom rule. */
 .active,
 .active:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-accent-soft-text);
-  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.active::after {
+  content: '';
+  position: absolute;
+  inset: auto var(--space-3) -1px;
+  height: 2px;
+  background: var(--color-rule-heavy);
 }
 
 /* ---------- Main ---------- */
 .main {
-  grid-area: main;
   min-width: 0;
 }
 
@@ -142,49 +163,61 @@
 
 .content {
   max-width: var(--content-max);
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-6) var(--space-12);
+  margin-inline: auto;
+  padding: var(--space-10) var(--space-6) var(--space-12);
+}
+
+@media (min-width: 90rem) {
+  .header {
+    padding-inline: max(var(--space-10), calc((100% - var(--content-max)) / 2 + var(--space-10)));
+  }
+
+  .content {
+    padding-inline: var(--space-10);
+  }
 }
 
 /* ---------- Narrow screens: bottom tab bar ---------- */
 @media (max-width: 60rem) {
-  .shell {
-    grid-template-areas:
-      'header'
-      'main';
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .header {
+    gap: var(--space-4);
     padding: 0 var(--space-3) 0 var(--space-4);
   }
 
   .nav {
     position: fixed;
     inset: auto 0 0 0;
-    top: auto;
     z-index: var(--z-nav);
     height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
     padding: 0 var(--space-1) env(safe-area-inset-bottom, 0px);
-    border-right: 0;
+    background: var(--color-page);
     border-top: 1px solid var(--color-border);
   }
 
   .navList {
+    display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    height: 100%;
+    width: 100%;
     gap: 0;
   }
 
   .navLink {
+    flex: 1;
     flex-direction: column;
     justify-content: center;
     gap: 2px;
-    height: 100%;
-    min-height: 0;
     padding: 0 2px;
+    letter-spacing: 0;
     font-size: 0.6875rem;
     text-align: center;
+  }
+
+  .navIcon {
+    display: block;
+  }
+
+  .navLink::before {
+    display: none;
   }
 
   .navLink span {
@@ -194,14 +227,12 @@
     max-width: 100%;
   }
 
-  .active,
-  .active:hover {
-    background: transparent;
-    color: var(--color-accent);
+  .active::after {
+    inset: -1px 25% auto;
   }
 
   .content {
-    padding: var(--space-4) var(--space-4)
+    padding: var(--space-6) var(--space-4)
       calc(var(--bottom-nav-height) + var(--space-8) + env(safe-area-inset-bottom, 0px));
   }
 }
