@@ -1,6 +1,6 @@
 .page {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-10);
   min-width: 0;
 }
 
@@ -46,7 +46,6 @@
 .reputationValue {
   font-size: var(--text-3xl);
   font-weight: var(--weight-semibold);
-  font-variant-numeric: tabular-nums;
   line-height: 1.1;
   color: var(--color-text);
 }
@@ -152,7 +151,6 @@
 .degrees {
   font-size: var(--text-xl);
   color: var(--color-text);
-  font-variant-numeric: tabular-nums;
 }
 
 .chain {
@@ -217,14 +215,12 @@
 }
 
 .metricValue {
-  font-variant-numeric: tabular-nums;
   font-weight: var(--weight-semibold);
 }
 
 .metricRank {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
 }
 
 .communityLink {
@@ -268,8 +264,8 @@
 .post {
   display: grid;
   grid-template-columns: 3.5rem minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -283,16 +279,15 @@
 
 .postScore {
   display: grid;
-  justify-items: center;
+  justify-items: end;
   align-content: start;
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-sunken);
+  line-height: 1.2;
 }
 
 .postScoreValue {
+  font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
-  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-heading);
 }
 
 .postScoreLabel {
@@ -311,9 +306,20 @@
   overflow-wrap: anywhere;
 }
 
+.postTitle a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.postTitle a:hover {
+  text-decoration: underline;
+}
+
 .inlineIcon {
+  display: inline;
   margin-left: var(--space-1);
   vertical-align: -1px;
+  color: var(--color-text-muted);
 }
 
 .postMeta {

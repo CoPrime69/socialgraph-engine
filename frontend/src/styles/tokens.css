@@ -2,9 +2,10 @@
  * Design tokens. Every colour used by the app (including the canvas graph, which reads these
  * custom properties at draw time) is defined here, once for light and once for dark.
  *
- * Contrast (WCAG 2.x) was computed, not eyeballed:
- *   text on surface ≥ 7:1, secondary ≥ 7:1, muted ≥ 4.5:1, accent text ≥ 5:1,
- *   button labels on accent/danger fills ≥ 5:1, input borders and focus rings ≥ 3:1.
+ * The interface is ink on cool paper; saturated colour is reserved for data (community
+ * colours, medals). Contrast (WCAG 2.x) was computed, not eyeballed, in both themes:
+ *   text ≥ 13:1, secondary ≥ 6.4:1, muted ≥ 4.6:1, links and focus ring ≥ 4.8:1,
+ *   tag text on tag fill ≥ 6:1, button labels on ink fills ≥ 14:1, input borders ≥ 3:1.
  * The categorical series palette (community colours) is the validated reference palette:
  * adjacent-pair CVD ΔE ≥ 8 and normal-vision ΔE ≥ 15 in both modes. Three light-mode slots
  * sit below 3:1 against the surface, so every coloured mark is paired with a text label
@@ -14,22 +15,25 @@
 :root {
   color-scheme: light dark;
 
-  /* Typography */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Typography: Schibsted Grotesk (self-hosted, see main.tsx), a 1.25 scale from 16 px */
+  --font-sans:
+    'Schibsted Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-  --text-xs: 0.75rem;
+  --text-xs: 0.8rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
-  --text-3xl: 2rem;
-  --leading-tight: 1.25;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5625rem;
+  --text-2xl: 1.953rem;
+  --text-3xl: 2.441rem;
+  --leading-tight: 1.15;
   --leading-normal: 1.5;
   --weight-regular: 400;
   --weight-medium: 500;
-  --weight-semibold: 600;
-  --weight-bold: 700;
+  --weight-semibold: 620;
+  --weight-bold: 720;
+  --tracking-display: -0.022em;
+  --tracking-heading: -0.012em;
 
   /* Spacing (4 px grid) */
   --space-1: 0.25rem;
@@ -43,16 +47,16 @@
   --space-12: 3rem;
 
   /* Shape */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
   --radius-pill: 999px;
 
   /* Layout */
   --sidebar-width: 14.5rem;
-  --header-height: 3.5rem;
+  --header-height: 3.75rem;
   --bottom-nav-height: 4rem;
-  --content-max: 82rem;
+  --content-max: 80rem;
   --control-height: 2.5rem;
   --control-height-sm: 2rem;
 
@@ -67,36 +71,41 @@
   --z-tooltip: 40;
   --z-toast: 60;
 
-  /* ---------- Light theme ---------- */
-  --color-page: #f9f9f7;
-  --color-surface: #fcfcfb;
-  --color-surface-raised: #ffffff;
-  --color-surface-sunken: #f1f0ec;
-  --color-text: #0b0b0b;
-  --color-text-secondary: #52514e;
-  --color-text-muted: #6f6d68;
-  --color-border: #e1e0d9;
-  --color-border-strong: #8f8d86;
-  --color-accent: #256abf;
-  --color-accent-hover: #1c5cab;
+  /* ---------- Light theme: ink on cool paper; colour is reserved for data ---------- */
+  --color-page: #eef1f2; /* paper */
+  --color-surface: #eef1f2; /* sections sit on the paper, unboxed */
+  --color-surface-raised: #ffffff; /* sheet: inputs, menus, the map plate */
+  --color-surface-sunken: #e3e8ea; /* plate */
+  --color-text: #15202b; /* ink */
+  --color-text-secondary: #46525e; /* graphite */
+  --color-text-muted: #5c6873;
+  --color-border: #d2d8dc; /* rule */
+  --color-border-strong: #7d8892;
+  --color-rule-heavy: #15202b;
+  --color-accent: #15202b; /* primary actions and selection are ink */
+  --color-accent-hover: #2b3845;
   --color-accent-contrast: #ffffff;
-  --color-accent-soft: #eef4fc;
-  --color-accent-soft-text: #1c5cab;
-  --color-focus: #256abf;
-  --color-danger: #b42323;
-  --color-danger-hover: #9a1c1c;
+  --color-accent-soft: #dde4e8;
+  --color-accent-soft-text: #15202b;
+  --color-link: #1f4fae; /* survey blue: links in prose */
+  --color-focus: #1d5bd6;
+  --color-tag: #e0eaf1; /* Stack Overflow's own 2008 tag colours */
+  --color-tag-text: #2f5a78;
+  --color-tag-edge: #b9cddc;
+  --color-danger: #b3261e;
+  --color-danger-hover: #951f19;
   --color-danger-contrast: #ffffff;
-  --color-danger-soft: #fdeeee;
-  --color-success: #006300;
-  --color-success-soft: #e9f6e9;
-  --color-warning: #8a5a00;
-  --color-warning-soft: #fff6e0;
-  --color-overlay: rgb(11 11 11 / 0.45);
-  --skeleton-base: #ecebe6;
-  --skeleton-shine: #f6f5f1;
-  --shadow-sm: 0 1px 2px rgb(11 11 11 / 0.06);
-  --shadow-md: 0 4px 16px rgb(11 11 11 / 0.08);
-  --shadow-lg: 0 16px 40px rgb(11 11 11 / 0.18);
+  --color-danger-soft: #f8e7e5;
+  --color-success: #1d6b35;
+  --color-success-soft: #e2f0e5;
+  --color-warning: #875200;
+  --color-warning-soft: #f6ecd9;
+  --color-overlay: rgb(21 32 43 / 0.45);
+  --skeleton-base: #e1e6e9;
+  --skeleton-shine: #ebeff1;
+  --shadow-sm: none;
+  --shadow-md: 0 2px 10px rgb(21 32 43 / 0.1);
+  --shadow-lg: 0 18px 48px rgb(21 32 43 / 0.22);
 
   /* Data visualisation — categorical slots (fixed order, never cycled) */
   --series-1: #2a78d6;
@@ -109,13 +118,14 @@
   --series-8: #e34948;
   --series-other: #8f8d86;
   /* Sequential (single hue) for meters and score bars */
-  --meter-track: #cde2fb;
-  --meter-fill: #2a78d6;
+  --meter-track: #d5dde2;
+  --meter-fill: #15202b;
   /* Network graph chrome */
-  --graph-edge: #8f8d86;
-  --graph-ring: #fcfcfb;
-  --graph-highlight: #0b0b0b;
-  --graph-you: #256abf;
+  --graph-plate: #ffffff;
+  --graph-edge: #8b959e;
+  --graph-ring: #ffffff;
+  --graph-highlight: #15202b;
+  --graph-you: #1f4fae;
   /* Stack Overflow badge classes (decorative dots; always paired with a text label) */
   --medal-gold: #d4a017;
   --medal-silver: #a3a7ab;
@@ -124,35 +134,40 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-page: #0d0d0d;
-    --color-surface: #1a1a19;
-    --color-surface-raised: #232321;
-    --color-surface-sunken: #141413;
-    --color-text: #f0efec;
-    --color-text-secondary: #c3c2b7;
-    --color-text-muted: #9d9b94;
-    --color-border: #2c2c2a;
-    --color-border-strong: #6b6a64;
-    --color-accent: #86b6ef;
-    --color-accent-hover: #9ec5f4;
-    --color-accent-contrast: #0b0b0b;
-    --color-accent-soft: #1f2a38;
-    --color-accent-soft-text: #86b6ef;
-    --color-focus: #86b6ef;
-    --color-danger: #f08080;
-    --color-danger-hover: #f49a9a;
-    --color-danger-contrast: #0b0b0b;
-    --color-danger-soft: #3a1d1d;
-    --color-success: #4cc24c;
-    --color-success-soft: #13261a;
-    --color-warning: #fab219;
-    --color-warning-soft: #2e2510;
+    --color-page: #11181f;
+    --color-surface: #11181f;
+    --color-surface-raised: #1d2731;
+    --color-surface-sunken: #0c1218;
+    --color-text: #e4e9ec;
+    --color-text-secondary: #b2bcc4;
+    --color-text-muted: #8e99a3;
+    --color-border: #28333d;
+    --color-border-strong: #6b7885;
+    --color-rule-heavy: #e4e9ec;
+    --color-accent: #e4e9ec;
+    --color-accent-hover: #ffffff;
+    --color-accent-contrast: #11181f;
+    --color-accent-soft: #24303b;
+    --color-accent-soft-text: #e4e9ec;
+    --color-link: #93b4f0;
+    --color-focus: #7ea8f2;
+    --color-tag: #1d3242;
+    --color-tag-text: #a3c6de;
+    --color-tag-edge: #2d4a60;
+    --color-danger: #f08a80;
+    --color-danger-hover: #f4a198;
+    --color-danger-contrast: #11181f;
+    --color-danger-soft: #3a2020;
+    --color-success: #6fcb8b;
+    --color-success-soft: #15291d;
+    --color-warning: #f0b54a;
+    --color-warning-soft: #2f2612;
     --color-overlay: rgb(0 0 0 / 0.6);
-    --skeleton-base: #262624;
-    --skeleton-shine: #302f2c;
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 16px rgb(0 0 0 / 0.45);
-    --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
+    --skeleton-base: #1a232c;
+    --skeleton-shine: #222c36;
+    --shadow-sm: none;
+    --shadow-md: 0 2px 10px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.6);
 
     --series-1: #3987e5;
     --series-2: #d95926;
@@ -163,11 +178,12 @@
     --series-7: #9085e9;
     --series-8: #e66767;
     --series-other: #6b6a64;
-    --meter-track: #0d366b;
-    --meter-fill: #5598e7;
-    --graph-edge: #9d9b94;
-    --graph-ring: #1a1a19;
-    --graph-highlight: #f0efec;
-    --graph-you: #86b6ef;
+    --meter-track: #24303b;
+    --meter-fill: #c9d2d9;
+    --graph-plate: #0c1218;
+    --graph-edge: #8e99a3;
+    --graph-ring: #0c1218;
+    --graph-highlight: #e4e9ec;
+    --graph-you: #93b4f0;
   }
 }

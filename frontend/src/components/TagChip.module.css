@@ -1,32 +1,35 @@
+/* Topic tags keep the look Stack Overflow gave them in 2008: square, pale blue, a darker edge. */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  border-radius: var(--radius-sm);
-  background: var(--color-accent-soft);
-  color: var(--color-accent-soft-text);
-  font-weight: var(--weight-medium, 500);
+  border-radius: 0;
+  border-right: 1px solid var(--color-tag-edge);
+  border-bottom: 1px solid var(--color-tag-edge);
+  background: var(--color-tag);
+  color: var(--color-tag-text);
+  font-weight: var(--weight-medium);
   text-decoration: none;
   white-space: nowrap;
 }
 
 .tag:hover {
+  color: var(--color-tag-text);
   text-decoration: underline;
 }
 
 .md {
-  min-height: 1.75rem;
-  padding: 2px var(--space-2);
+  min-height: 1.625rem;
+  padding: 1px var(--space-2);
   font-size: var(--text-sm);
 }
 
 .sm {
-  min-height: 1.375rem;
-  padding: 0 var(--space-2);
+  min-height: 1.25rem;
+  padding: 0 0.375rem;
   font-size: var(--text-xs);
 }
 
 .count {
   color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
 }

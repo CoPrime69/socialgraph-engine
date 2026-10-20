@@ -52,6 +52,24 @@ export function AppShell() {
           <Logo />
           <span className={styles.brandName}>SocialGraph</span>
         </Link>
+        <nav className={styles.nav} aria-label="Main">
+          <ul role="list" className={styles.navList}>
+            {NAV_ITEMS.map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  end={item.end ?? false}
+                  className={({ isActive }) =>
+                    [styles.navLink, isActive ? styles.active : ''].join(' ')
+                  }
+                >
+                  <Icon name={item.icon} size={20} className={styles.navIcon} />
+                  <span>{item.label}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
         <div className={styles.account}>
           <Link to={`/users/${session.user.id}`} className={styles.user}>
             <Avatar name={session.user.name} size="sm" highlighted />
@@ -65,25 +83,6 @@ export function AppShell() {
           </Button>
         </div>
       </header>
-
-      <nav className={styles.nav} aria-label="Main">
-        <ul role="list" className={styles.navList}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.end ?? false}
-                className={({ isActive }) =>
-                  [styles.navLink, isActive ? styles.active : ''].join(' ')
-                }
-              >
-                <Icon name={item.icon} size={20} />
-                <span>{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
 
       <main id="main" ref={mainRef} tabIndex={-1} className={styles.main}>
         <div className={styles.content}>

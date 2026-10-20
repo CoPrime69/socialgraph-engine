@@ -132,7 +132,7 @@ describe('Overview', () => {
 
   it('draws the network graph and offers the same people as a table', async () => {
     const { user } = await openOverview();
-    const card = screen.getByRole('region', { name: 'Network graph' });
+    const card = screen.getByRole('region', { name: 'Network map' });
     const canvas = await within(card).findByRole('img', {
       name: /most influential of 18,649 people/,
     });

@@ -1,7 +1,7 @@
 .header {
   display: grid;
   gap: var(--space-3);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
 }
 
 .before {
@@ -18,18 +18,22 @@
 
 .titles {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-3);
   min-width: 0;
 }
 
 .title {
-  font-size: var(--text-2xl);
-  letter-spacing: -0.01em;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.05;
 }
 
 .description {
+  max-width: 40rem;
+  font-size: var(--text-lg);
+  line-height: 1.4;
   color: var(--color-text-secondary);
-  max-width: 48rem;
 }
 
 .meta {
@@ -45,10 +49,14 @@
 
 @media (max-width: 40rem) {
   .title {
-    font-size: var(--text-xl);
+    font-size: var(--text-2xl);
+  }
+
+  .description {
+    font-size: var(--text-md);
   }
 
   .header {
-    margin-bottom: var(--space-4);
+    margin-bottom: 0;
   }
 }

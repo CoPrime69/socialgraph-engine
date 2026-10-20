@@ -36,7 +36,7 @@ export function OverviewPage() {
       <LoadingState label="Loading network statistics…">
         <div className={styles.tileSkeletons}>
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} height="6rem" radius="10px" />
+            <Skeleton key={i} height="4.5rem" radius="4px" />
           ))}
         </div>
       </LoadingState>
@@ -53,7 +53,7 @@ export function OverviewPage() {
   } else {
     const reach = data.users > 0 ? data.largest_component / data.users : 0;
     tiles = (
-      <StatGrid label="Network statistics">
+      <StatGrid label="Network statistics" layout="key">
         <StatTile
           label="People"
           value={formatInteger(data.users)}
@@ -97,7 +97,15 @@ export function OverviewPage() {
           ) : undefined
         }
       />
-      {tiles}
+      <div className={styles.hero}>
+        <GraphCard
+          title="Network map"
+          description="The most influential people and how they connect. Colours show communities."
+          scope={{ kind: 'top' }}
+          youId={session.user.id}
+        />
+        <div className={styles.key}>{tiles}</div>
+      </div>
       <div className={styles.columns}>
         <InfluencersCard
           youId={session.user.id}
@@ -105,12 +113,6 @@ export function OverviewPage() {
         />
         <TopCommunitiesCard totalUsers={data?.users} />
       </div>
-      <GraphCard
-        title="Network graph"
-        description="The most influential people and how they connect. Colours show communities."
-        scope={{ kind: 'top' }}
-        youId={session.user.id}
-      />
     </div>
   );
 }

@@ -156,7 +156,7 @@ export function GraphCard({
       />
     ) : (
       <LoadingState label="Loading the network graph…">
-        <Skeleton height={size === 'lg' ? '28rem' : '20rem'} radius="10px" />
+        <Skeleton height={size === 'lg' ? '28rem' : '20rem'} radius="4px" />
       </LoadingState>
     );
   } else if (data.nodes.length === 0 || (scope.kind === 'ego' && data.nodes.length <= 1)) {

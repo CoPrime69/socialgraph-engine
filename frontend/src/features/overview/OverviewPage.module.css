@@ -1,24 +1,50 @@
 .page {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-10);
+  min-width: 0;
+}
+
+/* The map leads the page; the key figures sit beside it like a map legend. */
+.hero {
+  display: grid;
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.key {
   min-width: 0;
 }
 
 .tileSkeletons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .columns {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-12) var(--space-10);
   align-items: start;
 }
 
 @media (min-width: 75rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+  }
+
+  .key {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-6));
+    padding-top: var(--space-4);
+  }
+
   .columns {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 74.99rem) {
+  .key {
+    order: -1;
   }
 }
 
@@ -69,7 +95,6 @@
   display: grid;
   justify-items: end;
   font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
 }
 
 .communityShare {

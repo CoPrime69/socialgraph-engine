@@ -44,6 +44,8 @@ h3,
 h4 {
   line-height: var(--leading-tight);
   font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
 }
 
 ul[role='list'],
@@ -76,12 +78,12 @@ button:disabled {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-underline-offset: 0.15em;
 }
 
 a:hover {
-  color: var(--color-accent-hover);
+  color: var(--color-text);
 }
 
 table {
@@ -116,10 +118,6 @@ table {
   border: 0 !important;
 }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
 .muted {
   color: var(--color-text-muted);
 }
@@ -128,8 +126,8 @@ table {
 .community-swatch {
   display: inline-block;
   flex: none;
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   background: var(--series-other);
   vertical-align: -0.05em;

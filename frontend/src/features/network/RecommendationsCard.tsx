@@ -24,7 +24,7 @@ export function RecommendationsCard() {
       <LoadingState label="Loading suggestions…">
         <div className={styles.skeletonList}>
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} height="4.5rem" radius="10px" />
+            <Skeleton key={i} height="4.5rem" radius="4px" />
           ))}
         </div>
       </LoadingState>
@@ -108,7 +108,7 @@ function RecommendationRow({ recommendation }: { recommendation: Recommendation 
       <div className={styles.rowAction}>
         <Button
           size="sm"
-          variant="primary"
+          variant="secondary"
           icon="userPlus"
           loading={connect.isPending}
           loadingLabel="Connecting…"
