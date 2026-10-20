@@ -58,12 +58,14 @@ struct Rendered {
 };
 using ResponseCache = sg::common::LruCache<std::string, std::shared_ptr<const Rendered>>;
 
-// Cache-aside over rendered JSON: a hit skips PostgreSQL and serialization entirely. The strong
+// Cache-aside over rendered JSON: a hit skips PostgreSQL and serialization entirely, and is
+// answered on the I/O thread. The strong
 // ETag is derived from the body, so clients revalidating an unchanged response get 304.
 template <class Render>
 void cached_json(const Request& req, Response& res, ResponseCache* cache, const std::string& key,
                  Render&& render) {
   auto make = [&] {
+    sg::common::require_worker();  // a miss reads PostgreSQL: continue on the worker pool
     auto body = render().dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
     auto etag = "\"" + std::to_string(std::hash<std::string>{}(body)) + "\"";
     return std::make_shared<const Rendered>(Rendered{std::move(body), std::move(etag)});

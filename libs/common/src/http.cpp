@@ -49,6 +49,18 @@ struct RequestContext {
 
 thread_local RequestContext t_request;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
+/// Thrown by require_worker(); deliberately not a std::exception, so generic handlers let it pass.
+struct NeedsWorker {};
+/// True while an inline handler runs on a server that can move it to its worker pool.
+thread_local bool t_may_defer = false;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
+struct DeferScope {
+  DeferScope() noexcept { t_may_defer = true; }
+  ~DeferScope() { t_may_defer = false; }
+  DeferScope(const DeferScope&) = delete;
+  DeferScope& operator=(const DeferScope&) = delete;
+};
+
 constexpr std::size_t kMaxRequestIdLength = 128;
 constexpr int kMaxJsonDepth = 64;
 constexpr std::string_view kJsonContentType = "application/json; charset=utf-8";
@@ -989,6 +1001,8 @@ struct HttpServer::Impl {
       log_error("unhandled exception",
                 {{"request_id", current_request_id()}, {"method", req.method}, {"path", req.path}, {"error", e.what()}});
       write_error(res, internal_error());
+    } catch (const NeedsWorker&) {
+      throw;  // serve_request() runs the handler again on a worker
     } catch (...) {
       log_error("unhandled exception",
                 {{"request_id", current_request_id()}, {"method", req.method}, {"path", req.path}, {"error", "unknown"}});
@@ -1063,6 +1077,10 @@ struct HttpServer::Impl {
       answered = true;
       respond(to_drogon(res));
       access_log(req, status, start);
+    } catch (const NeedsWorker&) {
+      t_request.active = false;
+      t_request.request_id.clear();
+      throw;
     } catch (const std::exception& e) {
       log_error("request processing failed", {{"request_id", t_request.request_id}, {"error", e.what()}});
       if (!answered) {
@@ -1095,8 +1113,17 @@ void serve_request(HttpServer::Impl& server, const drogon::HttpRequestPtr& reque
   parse_query(request->query(), req.params);
 
   if (!server.offloaded(req)) {
-    server.serve(method, req, start, callback);
-    return;
+    if (!server.pool) {
+      server.serve(method, req, start, callback);
+      return;
+    }
+    try {
+      const DeferScope defer;
+      server.serve(method, req, start, callback);
+      return;
+    } catch (const NeedsWorker&) {
+      // The handler needs to block: run it again on a worker, below.
+    }
   }
   // The response goes back to the connection's own loop, which then writes it without another
   // hop; the worker keeps no reference to Drogon's objects once it has handed them over.
@@ -1118,6 +1145,7 @@ HttpServer::HttpServer(std::string service_name, HttpServerOptions options)
   }
   get("/healthz", [](const Request&, Response& res) { write_json(res, 200, {{"status", "ok"}}); });
   get("/readyz", [impl = impl_.get()](const Request&, Response& res) {
+    require_worker();  // readiness checks may query a database
     std::function<bool()> check;
     {
       std::lock_guard lock(impl->readiness_mutex);
@@ -1358,6 +1386,14 @@ std::string client_ip(const Request& req) {
     }
   }
   return req.remote_addr;
+}
+
+bool is_write(const Request& req) { return req.method != "GET" && req.method != "HEAD"; }
+
+void require_worker() {
+  if (t_may_defer) {
+    throw NeedsWorker{};
+  }
 }
 
 std::string current_request_id() { return t_request.active ? t_request.request_id : std::string(); }

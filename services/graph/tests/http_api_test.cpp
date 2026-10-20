@@ -27,6 +27,9 @@ class GraphApiTest : public ::testing::Test {
     sg::graph_service::testing::populate(repo);
     sg::common::HttpServerOptions o;
     o.threads = 4;
+    o.blocking_handlers = false;  // as in main.cpp: cached reads inline, misses and writes on workers
+    o.offload = sg::common::is_write;
+    o.worker_threads = 4;
     server = std::make_unique<sg::common::HttpServer>("graph-test", o);
     sg::graph_service::http::register_routes(*server, graph, verifier, cache);
     port = server->bind_to_any_port();

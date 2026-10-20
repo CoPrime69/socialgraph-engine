@@ -99,6 +99,8 @@ struct HttpServerOptions {
   /// true: handlers run on a pool of `worker_threads` threads and may block (database, Redis).
   /// false: handlers run inline on the I/O thread and must not block, except requests for which
   /// `offload` returns true, which still go to the pool. GET /healthz always runs inline.
+  /// With a pool (`offload` set), an inline handler that turns out to need to block (a cache
+  /// miss) calls require_worker() and is run again from the start on the pool.
   bool blocking_handlers = true;
   std::size_t worker_threads = 32;
   std::function<bool(const Request&)> offload;
@@ -181,6 +183,16 @@ void write_error(Response& res, const ApiError& error);
 /// Client address for rate limiting: first hop of X-Forwarded-For when present (the gateway
 /// overwrites it with the peer address), else the socket peer address.
 [[nodiscard]] std::string client_ip(const Request& req);
+
+/// `offload` predicate for read-mostly services: every method but GET and HEAD starts on the pool.
+[[nodiscard]] bool is_write(const Request& req);
+
+/// For handlers that run inline on an I/O thread and only sometimes block, e.g. a cache read that
+/// misses: call it before the blocking part. Inline on a server that has a worker pool, it abandons
+/// this run (by throwing a private type that handlers must let through, so catch only what you
+/// handle) and the server runs the handler again from the start on a worker; everywhere else it
+/// returns at once. Whatever the handler did before the call must therefore be safe to repeat.
+void require_worker();
 
 /// Request id of the request being handled on the calling thread (empty outside a request).
 [[nodiscard]] std::string current_request_id();

@@ -14,7 +14,8 @@ BUILD_DIR=${BUILD_DIR:-$root/build/release}
 RUN_DIR=${RUN_DIR:-$root/build/stack}
 PG_ADMIN_URL=${PG_ADMIN_URL:-postgresql://socialgraph:devpassword@localhost:5432/postgres}
 REDIS_HOST=${REDIS_HOST:-127.0.0.1}
-HTTP_THREADS=${HTTP_THREADS:-16}
+HTTP_THREADS=${HTTP_THREADS:-0}          # event-loop threads; 0 = one per core
+HTTP_WORKER_THREADS=${HTTP_WORKER_THREADS:-32}  # threads running handlers that block on PostgreSQL
 DB_POOL_SIZE=${DB_POOL_SIZE:-16}
 GATEWAY_IMAGE=${GATEWAY_IMAGE:-nginx:1.27-alpine}
 mkdir -p "$RUN_DIR"
@@ -58,7 +59,7 @@ start() {
   rm -f "$key"
   demo=$(openssl rand -hex 12)
 
-  export LOG_LEVEL=${LOG_LEVEL:-warn} REDIS_HOST REDIS_PORT=6379 HTTP_THREADS DB_POOL_SIZE
+  export LOG_LEVEL=${LOG_LEVEL:-warn} REDIS_HOST REDIS_PORT=6379 HTTP_THREADS HTTP_WORKER_THREADS DB_POOL_SIZE
   export SEED_ON_EMPTY=true SEED_DIR="$root/data/stackoverflow" AUTH_PUBLIC_KEY="$public"
 
   GRAPH_PORT=8082 GRAPH_DATABASE_URL=$(db_url graph) \

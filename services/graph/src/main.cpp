@@ -119,7 +119,11 @@ int serve(const Config& config) {
   common::HttpServerOptions options;
   options.port = config.port;
   options.threads = config.http_threads;
-  options.worker_threads = config.http_worker_threads;  // handlers query PostgreSQL
+  // Reads are answered on the I/O threads when cached and move to the worker pool on a miss
+  // (require_worker() in routes.cpp); writes wait for the group commit, so they start there.
+  options.blocking_handlers = false;
+  options.offload = common::is_write;
+  options.worker_threads = config.http_worker_threads;
   common::HttpServer server("graph-service", options);
   sg::graph_service::http::register_routes(server, graph, verifier, cache);
   server.set_readiness_check([&pool] { return pool.ping(); });

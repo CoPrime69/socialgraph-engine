@@ -82,7 +82,10 @@ int serve() {
   common::HttpServerOptions options;
   options.port = port();
   options.threads = static_cast<std::size_t>(common::env_int("HTTP_THREADS", 0, 0, 512));
-  // Cache misses query PostgreSQL, so handlers run on the worker pool.
+  // Cache hits are answered on the I/O threads; misses query PostgreSQL and move to the worker
+  // pool (require_worker() in api.cpp).
+  options.blocking_handlers = false;
+  options.offload = common::is_write;
   options.worker_threads = static_cast<std::size_t>(common::env_int("HTTP_WORKER_THREADS", 32, 1, 1024));
   common::HttpServer server("content-service", options);
   sg::content::ApiOptions api_options;

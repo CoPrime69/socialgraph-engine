@@ -92,6 +92,8 @@ class ContentApiTest : public ::testing::Test {
     verifier_ = std::make_unique<sg::common::TokenVerifier>(keys_.public_key_b64);
     sg::common::HttpServerOptions options;
     options.threads = 2;
+    options.blocking_handlers = false;  // as in main.cpp
+    options.offload = sg::common::is_write;
     server_ = std::make_unique<sg::common::HttpServer>("content-test", options);
     register_routes(*server_, repository_, *verifier_);
     port_ = server_->bind_to_any_port();

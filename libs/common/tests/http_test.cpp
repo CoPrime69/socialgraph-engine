@@ -385,6 +385,71 @@ TEST(HttpServerDispatch, InlineHandlersRunOnTheEventLoopAndOffloadedOnesOnWorker
   EXPECT_EQ(json::parse(r->body)["request_id"], "pooled-1");
 }
 
+TEST(HttpServerDispatch, InlineHandlersMoveToAWorkerWhenTheyNeedToBlock) {
+  HttpServerOptions options;
+  options.blocking_handlers = false;
+  options.worker_threads = 2;
+  options.offload = [](const Request& req) { return req.method != "GET"; };
+  HttpServer server("defer", options);
+  std::atomic<int> runs{0};
+  server.get("/api/v1/item", [&runs](const Request& req, Response& res) {
+    ++runs;
+    const std::string first = thread_name();
+    if (req.has_param("miss")) {
+      require_worker();  // throws on the I/O thread; the second run gets past it
+    }
+    write_json(res, 200, {{"thread", first}, {"request_id", current_request_id()}});
+  });
+  server.get("/api/v1/swallow", [](const Request&, Response& res) {
+    try {
+      require_worker();
+    } catch (const std::exception&) {
+      FAIL() << "the retry signal must not be a std::exception";
+    }
+    write_json(res, 200, {{"thread", thread_name()}});
+  });
+  Running running(server);
+  httplib::Client client("127.0.0.1", running.port());
+
+  auto r = client.Get("/api/v1/item", {{"X-Request-Id", "hit-1"}});
+  ASSERT_TRUE(r);
+  EXPECT_NE(json::parse(r->body)["thread"], "sg-http-worker");
+  EXPECT_EQ(runs.load(), 1);
+
+  r = client.Get("/api/v1/item?miss=1", {{"X-Request-Id", "miss-1"}});
+  ASSERT_TRUE(r);
+  EXPECT_EQ(r->status, 200);
+  EXPECT_EQ(json::parse(r->body)["thread"], "sg-http-worker");
+  EXPECT_EQ(json::parse(r->body)["request_id"], "miss-1") << "the retry keeps the request id";
+  EXPECT_EQ(runs.load(), 3) << "abandoned inline, then run once on a worker";
+
+  r = client.Get("/api/v1/swallow");
+  ASSERT_TRUE(r);
+  EXPECT_EQ(json::parse(r->body)["thread"], "sg-http-worker");
+
+  // The I/O thread is not left in "may defer" mode: a later inline request still runs inline.
+  r = client.Get("/api/v1/item");
+  ASSERT_TRUE(r);
+  EXPECT_NE(json::parse(r->body)["thread"], "sg-http-worker");
+}
+
+TEST(HttpServerDispatch, RequireWorkerIsANoOpWithoutAPool) {
+  HttpServerOptions options;
+  options.blocking_handlers = false;  // no offload: no pool
+  HttpServer server("nopool", options);
+  server.get("/api/v1/item", [](const Request&, Response& res) {
+    require_worker();
+    write_json(res, 200, {{"thread", thread_name()}});
+  });
+  Running running(server);
+  httplib::Client client("127.0.0.1", running.port());
+  auto r = client.Get("/api/v1/item");
+  ASSERT_TRUE(r);
+  EXPECT_EQ(r->status, 200);
+  EXPECT_NE(json::parse(r->body)["thread"], "sg-http-worker");
+  require_worker();  // outside any request it simply returns
+}
+
 TEST(HttpServerDispatch, BlockingHandlersRunOnWorkers) {
   HttpServer server("blocking", HttpServerOptions{});
   server.get("/api/v1/where", [](const Request&, Response& res) { write_json(res, 200, {{"thread", thread_name()}}); });

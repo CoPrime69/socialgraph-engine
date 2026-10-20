@@ -102,31 +102,45 @@ domain::UserQuery parse_user_query(const Request& req) {
 
 void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
                      const sg::common::TokenVerifier& verifier, ReadCache& cache) {
+  // GET handlers run on the I/O thread and serve cache hits there; each cache miss (and anything
+  // else that reads PostgreSQL) first calls require_worker(), which moves the request to the worker
+  // pool. Writes always run on the pool (see main.cpp).
   server.get("/api/v1/meta/taxonomy", [&graph](const Request&, Response& res) {
+    sg::common::require_worker();
     sg::common::write_json(res, 200, domain::to_json(*graph.taxonomy()));
   });
 
   server.get("/api/v1/users", [&graph, &verifier, &cache](const Request& req, Response& res) {
     (void)sg::common::require_auth(req, verifier);
     const auto query = parse_user_query(req);
-    write_cached(res, cache.search(search_key(query), [&] { return render(domain::to_json(graph.list_users(query))); }));
+    write_cached(res, cache.search(search_key(query), [&] {
+      sg::common::require_worker();
+      return render(domain::to_json(graph.list_users(query)));
+    }));
   });
 
   server.get("/api/v1/users/:id", [&graph, &verifier, &cache](const Request& req, Response& res) {
     (void)sg::common::require_auth(req, verifier);
     const auto id = sg::common::path_id(req, "id");
-    write_cached(res, cache.member(ReadCache::Kind::profile, id, [&] { return render(domain::to_json(graph.profile(id))); }));
+    write_cached(res, cache.member(ReadCache::Kind::profile, id, [&] {
+      sg::common::require_worker();
+      return render(domain::to_json(graph.profile(id)));
+    }));
   });
 
   server.get("/api/v1/me/profile", [&graph, &verifier, &cache](const Request& req, Response& res) {
     const auto caller = sg::common::require_auth(req, verifier).user_id;
     write_cached(res, cache.member(ReadCache::Kind::profile, caller,
-                                   [&] { return render(domain::to_json(graph.my_profile(caller))); }));
+                                   [&] {
+      sg::common::require_worker();
+      return render(domain::to_json(graph.my_profile(caller)));
+    }));
   });
 
   server.get("/api/v1/me/connections", [&graph, &verifier, &cache](const Request& req, Response& res) {
     const auto caller = sg::common::require_auth(req, verifier).user_id;
     write_cached(res, cache.member(ReadCache::Kind::connections, caller, [&] {
+      sg::common::require_worker();
       const auto list = graph.my_connections(caller);
       json items = json::array();
       for (const auto& item : list.items) {
@@ -159,6 +173,7 @@ void register_routes(sg::common::HttpServer& server, app::GraphService& graph,
   });
 
   server.get("/internal/v1/snapshot", [&graph](const Request&, Response& res) {
+    sg::common::require_worker();
     sg::common::write_json(res, 200, domain::to_json(graph.snapshot()));
   });
 }
