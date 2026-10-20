@@ -78,7 +78,8 @@ TEST_F(EventConsumerTest, BootstrapsThenAppliesEvents) {
   publish(testing::connection_removed(12, 1, 9));
   ASSERT_TRUE(eventually([&] { return model.version() == 12; }));
   EXPECT_EQ(model.materialize()->edges.size(), 13U);
-  EXPECT_EQ(consumer.events_applied(), 2U);
+  // The counter is bumped right after the model changes, so it may trail the version briefly.
+  EXPECT_TRUE(eventually([&] { return consumer.events_applied() == 2U; })) << consumer.events_applied();
   EXPECT_EQ(snapshot_calls_, 1);
   consumer.stop();
 }
