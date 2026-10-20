@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <chrono>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
 #include "sg/graph/parallel.hpp"
@@ -60,6 +62,9 @@ TEST(ParallelFor, AcceptsIndexOnlyBodies) {
 }
 
 TEST(ParallelFor, PropagatesTheFirstExceptionAndStops) {
+  // Every iteration sleeps, so draining all indices takes seconds while the throw at index 17 is
+  // caught within microseconds; with empty bodies the other workers could finish every index
+  // before the exception is unwound, and the test would depend on the scheduler.
   std::atomic<int> calls{0};
   EXPECT_THROW(parallel_for(0, 100000, 4,
                             [&](std::size_t i, unsigned) {
@@ -67,6 +72,7 @@ TEST(ParallelFor, PropagatesTheFirstExceptionAndStops) {
                               if (i == 17) {
                                 throw std::runtime_error("boom");
                               }
+                              std::this_thread::sleep_for(std::chrono::microseconds(50));
                             }),
                std::runtime_error);
   EXPECT_LT(calls.load(), 100000);  // remaining indices are abandoned
