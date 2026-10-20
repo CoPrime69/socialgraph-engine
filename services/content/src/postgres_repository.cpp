@@ -60,8 +60,8 @@ Activity PostgresContentRepository::activity(std::int64_t user_id) {
     Activity a;
     a.user_id = user_id;
     // Precomputed at import (migration 0002); members without any content have no row.
-    const auto rows = tx.exec_params(
-        "SELECT questions, question_score, answers, accepted_answers, answer_score, comments, gold, silver, bronze "
+    const auto rows = sg::common::exec_cached(
+        tx, "SELECT questions, question_score, answers, accepted_answers, answer_score, comments, gold, silver, bronze "
         "FROM user_activity WHERE user_id = $1",
         user_id);
     if (rows.empty()) {
@@ -78,13 +78,13 @@ Activity PostgresContentRepository::activity(std::int64_t user_id) {
     a.silver = totals[7].as<std::int64_t>();
     a.bronze = totals[8].as<std::int64_t>();
 
-    for (const auto& r : tx.exec_params(
-             "SELECT t.name, ut.posts, ut.score FROM user_tags ut JOIN tags t ON t.id = ut.tag_id "
+    for (const auto& r : sg::common::exec_cached(
+             tx, "SELECT t.name, ut.posts, ut.score FROM user_tags ut JOIN tags t ON t.id = ut.tag_id "
              "WHERE ut.user_id = $1 ORDER BY ut.posts DESC, ut.score DESC, t.name LIMIT 8",
              user_id)) {
       a.top_tags.push_back({r[0].as<std::string>(), r[1].as<std::int64_t>(), r[2].as<std::int64_t>()});
     }
-    for (const auto& r : tx.exec_params("SELECT name, class, " SG_RFC3339("awarded_at")
+    for (const auto& r : sg::common::exec_cached(tx, "SELECT name, class, " SG_RFC3339("awarded_at")
                                         " FROM badges WHERE user_id = $1 ORDER BY awarded_at DESC, id DESC LIMIT 8",
                                         user_id)) {
       a.recent_badges.push_back({r[0].as<std::string>(), r[1].as<int>(), r[2].as<std::string>()});
@@ -100,7 +100,7 @@ Activity PostgresContentRepository::activity(std::int64_t user_id) {
         " FROM answers a JOIN questions q ON q.id = a.question_id WHERE a.owner_id = $1"
         "  ORDER BY a.score DESC, a.id LIMIT 5)"
         ") posts ORDER BY 5 DESC, 2 LIMIT 5";
-    for (const auto& r : tx.exec_params(top_posts, user_id)) {
+    for (const auto& r : sg::common::exec_cached(tx, top_posts, user_id)) {
       PostSummary p;
       p.is_question = r[0].as<bool>();
       p.id = r[1].as<std::int64_t>();
@@ -122,11 +122,11 @@ Page<TagInfo> PostgresContentRepository::tags(const std::optional<std::string>& 
     std::optional<std::string> pattern;
     if (prefix) pattern = escape_like(*prefix) + "%";
     Page<TagInfo> page{{}, 0, limit, offset};
-    page.total = tx.exec_params1("SELECT count(*) FROM tags WHERE $1::text IS NULL OR name LIKE $1 ESCAPE '\\'",
+    page.total = sg::common::exec_cached1(tx, "SELECT count(*) FROM tags WHERE $1::text IS NULL OR name LIKE $1 ESCAPE '\\'",
                                  pattern)[0]
                      .as<std::int64_t>();
-    for (const auto& r : tx.exec_params(
-             "SELECT t.name, t.question_count, c.name FROM tags t LEFT JOIN categories c ON c.slug = t.category_slug "
+    for (const auto& r : sg::common::exec_cached(
+             tx, "SELECT t.name, t.question_count, c.name FROM tags t LEFT JOIN categories c ON c.slug = t.category_slug "
              "WHERE $1::text IS NULL OR t.name LIKE $1 ESCAPE '\\' "
              "ORDER BY t.question_count DESC, t.name LIMIT $2 OFFSET $3",
              pattern, limit, offset)) {
@@ -143,7 +143,7 @@ Page<QuestionSummary> PostgresContentRepository::questions(const QuestionQuery& 
     Page<QuestionSummary> page{{}, 0, query.limit, query.offset};
     std::optional<std::int64_t> tag_id;
     if (query.tag) {
-      auto rows = tx.exec_params("SELECT id FROM tags WHERE name = $1", *query.tag);
+      auto rows = sg::common::exec_cached(tx, "SELECT id FROM tags WHERE name = $1", *query.tag);
       if (rows.empty()) return page;  // unknown tag: nothing matches
       tag_id = rows[0][0].as<std::int64_t>();
     }
@@ -167,13 +167,13 @@ Page<QuestionSummary> PostgresContentRepository::questions(const QuestionQuery& 
     }
     // Counting a tag's questions needs no join with questions (an index-only count).
     const std::string count_from = tag_id && !query.text ? " FROM question_tags qt" : from;
-    page.total = tx.exec_params1("SELECT count(*)" + count_from + where, params)[0].as<std::int64_t>();
+    page.total = sg::common::exec_cached1(tx, "SELECT count(*)" + count_from + where, params)[0].as<std::int64_t>();
     params.append(query.limit);
     std::string sql = std::string("SELECT ") + kQuestionColumns + kQuestionTags + from +
                       " LEFT JOIN authors au ON au.user_id = q.owner_id" + where + order + " LIMIT " + next();
     params.append(query.offset);
     sql += " OFFSET " + next();
-    for (const auto& r : tx.exec_params(sql, params)) {
+    for (const auto& r : sg::common::exec_cached(tx, sql, params)) {
       page.items.push_back(question_summary(r));
     }
     return page;
@@ -186,14 +186,14 @@ std::optional<QuestionDetail> PostgresContentRepository::question(std::int64_t i
                             ", q.accepted_answer_id, " SG_RFC3339("q.closed_at") ","
                             " (SELECT count(*) FROM comments c WHERE c.question_id = q.id)"
                             " FROM questions q LEFT JOIN authors au ON au.user_id = q.owner_id WHERE q.id = $1";
-    auto rows = tx.exec_params(sql, id);
+    auto rows = sg::common::exec_cached(tx, sql, id);
     if (rows.empty()) return std::nullopt;
     QuestionDetail detail;
     detail.question = question_summary(rows[0]);
     if (!rows[0][9].is_null()) detail.accepted_answer_id = rows[0][9].as<std::int64_t>();
     if (!rows[0][10].is_null()) detail.closed_at = rows[0][10].as<std::string>();
     detail.comment_count = rows[0][11].as<std::int64_t>();
-    for (const auto& r : tx.exec_params("SELECT a.id, a.owner_id, au.display_name, a.score, " SG_RFC3339("a.created_at")
+    for (const auto& r : sg::common::exec_cached(tx, "SELECT a.id, a.owner_id, au.display_name, a.score, " SG_RFC3339("a.created_at")
                                         ", a.is_accepted FROM answers a LEFT JOIN authors au ON au.user_id = a.owner_id"
                                         " WHERE a.question_id = $1 ORDER BY a.is_accepted DESC, a.score DESC, a.id",
                                         id)) {

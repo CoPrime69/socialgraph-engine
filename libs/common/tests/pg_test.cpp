@@ -134,6 +134,41 @@ TEST_F(PgTest, AutocommitReadsRetryOnABrokenConnection) {
             1);
 }
 
+TEST_F(PgTest, CachedStatementsArePreparedOncePerConnection) {
+  PgPool pool(options(1));
+  const std::string sql = "SELECT $1::integer + 1";
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(pool.with_read([&](pqxx::nontransaction& tx) { return exec_cached1(tx, sql, i)[0].as<int>(); }), i + 1);
+  }
+  // Inside a transaction too, and a second text gets its own statement.
+  EXPECT_EQ(pool.with_transaction([](pqxx::work& tx) { return exec_cached1(tx, "SELECT 'x'::text")[0].as<std::string>(); }),
+            "x");
+  EXPECT_EQ(pool.with_read([](pqxx::nontransaction& tx) {
+              return tx.query_value<long>("SELECT count(*) FROM pg_prepared_statements");
+            }),
+            2);
+  // A connection the pool does not own runs the statement unprepared.
+  pqxx::connection other{db_->url()};
+  pqxx::nontransaction tx{other};
+  EXPECT_EQ(exec_cached1(tx, sql, 41)[0].as<int>(), 42);
+  EXPECT_EQ(tx.query_value<long>("SELECT count(*) FROM pg_prepared_statements"), 0);
+}
+
+TEST_F(PgTest, ReplacedConnectionsPrepareTheirStatementsAgain) {
+  PgPool pool(options(1));
+  const std::string sql = "SELECT pg_backend_pid() + $1::integer";
+  const auto first = pool.with_read([&](pqxx::nontransaction& tx) { return exec_cached1(tx, sql, 0)[0].as<int>(); });
+  {
+    pqxx::connection admin{db_->url()};
+    pqxx::nontransaction tx{admin};
+    tx.exec_params("SELECT pg_terminate_backend($1)", first);
+  }
+  // The replacement connection has no statements yet; exec_cached must not assume the old ones.
+  const auto second = pool.with_read([&](pqxx::nontransaction& tx) { return exec_cached1(tx, sql, 0)[0].as<int>(); });
+  EXPECT_NE(second, first);
+  EXPECT_EQ(pool.with_read([&](pqxx::nontransaction& tx) { return exec_cached1(tx, sql, 1)[0].as<int>(); }), second + 1);
+}
+
 TEST_F(PgTest, VacuumAfterImportKeepsTheSessionTimeout) {
   PgPool pool(options(1));
   pool.with_transaction([](pqxx::work& tx) { tx.exec("CREATE TABLE imported (id integer)"); });

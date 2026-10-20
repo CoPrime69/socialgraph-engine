@@ -263,6 +263,11 @@ TEST_F(GraphPostgresTest, ListProfilesFiltersSortsAndCounts) {
   EXPECT_EQ(page.items[1].profile.id, kDemo);  // reputation 1, last
   EXPECT_EQ(page.items[1].connection_count, 20);
 
+  q.offset = 40;  // past the end: no items, but still the total
+  page = repo_->list_profiles(q);
+  EXPECT_TRUE(page.items.empty());
+  EXPECT_EQ(page.total, 32);
+
   q = {};
   q.q = "JON";  // handle or name, case-insensitive
   page = repo_->list_profiles(q);

@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <map>
+#include <shared_mutex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 #include "sg/common/errors.hpp"
 #include "sg/common/log.hpp"
@@ -55,7 +57,56 @@ void configure(pqxx::connection& conn, const PgPoolOptions& options) {
                  std::to_string(std::max(options.statement_timeout_ms * 6, 60000)), options.application_name);
 }
 
+/// Prepared statements of each live pooled connection, by SQL text. A connection is registered
+/// when the pool opens it and removed by PooledConnectionDeleter before it is closed, so an
+/// address is never looked up after its connection is gone. Each entry is only used by the thread
+/// holding the connection's lease; the map itself is guarded by registry_mutex.
+struct Statements {
+  std::unordered_map<std::string, std::string> names;
+};
+constexpr std::size_t kMaxStatementsPerConnection = 256;
+std::shared_mutex registry_mutex;
+std::unordered_map<const pqxx::connection*, std::unique_ptr<Statements>> registry;
+
+void register_connection(const pqxx::connection* conn) {
+  std::unique_lock lock(registry_mutex);
+  registry[conn] = std::make_unique<Statements>();
+}
+
 }  // namespace
+
+namespace detail {
+
+void PooledConnectionDeleter::operator()(pqxx::connection* conn) const noexcept {
+  {
+    std::unique_lock lock(registry_mutex);
+    registry.erase(conn);
+  }
+  delete conn;
+}
+
+const std::string* prepared_name(pqxx::connection& conn, const std::string& sql) {
+  Statements* statements = nullptr;
+  {
+    std::shared_lock lock(registry_mutex);
+    const auto it = registry.find(&conn);
+    if (it == registry.end()) {
+      return nullptr;
+    }
+    statements = it->second.get();
+  }
+  if (const auto it = statements->names.find(sql); it != statements->names.end()) {
+    return &it->second;
+  }
+  if (statements->names.size() >= kMaxStatementsPerConnection) {
+    return nullptr;
+  }
+  std::string name = "sg_" + std::to_string(statements->names.size());
+  conn.prepare(name, sql);
+  return &statements->names.emplace(sql, std::move(name)).first->second;
+}
+
+}  // namespace detail
 
 PgPool::PgPool(PgPoolOptions options)
     : options_(std::move(options)), conninfo_(with_connect_timeout(options_.conninfo, options_.connect_timeout_s)) {
@@ -84,7 +135,7 @@ PgPool::Lease PgPool::acquire() {
   }
   ++in_use_;
   ++acquisitions_;
-  std::unique_ptr<pqxx::connection> conn;
+  Lease::Connection conn;
   if (!idle_.empty()) {
     conn = std::move(idle_.back());
     idle_.pop_back();
@@ -96,7 +147,9 @@ PgPool::Lease PgPool::acquire() {
   }
   conn.reset();
   try {
-    conn = open_dedicated_connection();
+    auto opened = open_dedicated_connection();
+    register_connection(opened.get());
+    conn = Lease::Connection(opened.release());
   } catch (const std::exception& e) {
     give_back(nullptr, true);
     log_warn("database connection failed", {{"conninfo", redact(options_.conninfo)}, {"error", e.what()}});
@@ -105,7 +158,7 @@ PgPool::Lease PgPool::acquire() {
   return Lease(this, std::move(conn));
 }
 
-void PgPool::give_back(std::unique_ptr<pqxx::connection> conn, bool discard) noexcept {
+void PgPool::give_back(Lease::Connection conn, bool discard) noexcept {
   {
     std::lock_guard lock(mutex_);
     --in_use_;
@@ -138,7 +191,7 @@ PgPool::Stats PgPool::stats() const {
   return {options_.size, idle_.size(), in_use_, acquisitions_, timeouts_};
 }
 
-PgPool::Lease::Lease(PgPool* pool, std::unique_ptr<pqxx::connection> conn) noexcept
+PgPool::Lease::Lease(PgPool* pool, Connection conn) noexcept
     : pool_(pool), conn_(std::move(conn)) {}
 
 PgPool::Lease::Lease(Lease&& other) noexcept

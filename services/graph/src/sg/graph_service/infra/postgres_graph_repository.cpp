@@ -30,15 +30,6 @@ constexpr int kProfileColumnCount = 16;
 // Maintained by triggers on connections (migration 0006).
 constexpr const char* kConnectionCount = "p.connection_count";
 
-// The search filters of GET /users; $1 LIKE pattern for q, $2 category, $3 branch, $4 min_reputation
-// (NULL = no filter). The pattern is lower-cased in SQL so the trigram indexes on handle_lower and
-// name_lower apply.
-constexpr const char* kProfileFilters =
-    " WHERE ($1::text IS NULL OR p.handle_lower LIKE lower($1::text) OR p.name_lower LIKE lower($1::text))"
-    " AND ($2::text IS NULL OR p.category = $2::text)"
-    " AND ($3::text IS NULL OR p.branch = $3::text)"
-    " AND ($4::bigint IS NULL OR p.reputation >= $4::bigint)";
-
 /// `%q%` with LIKE's wildcards and escape character escaped, so q matches literally.
 std::optional<std::string> substring_pattern(const std::optional<std::string>& q) {
   if (!q) {
@@ -126,9 +117,9 @@ domain::Taxonomy PostgresGraphRepository::load_taxonomy() {
 
 std::optional<domain::ProfileWithCount> PostgresGraphRepository::find_profile(std::int64_t user_id) {
   return pool_.with_read([&](pqxx::nontransaction& tx) -> std::optional<domain::ProfileWithCount> {
-    const auto result = tx.exec_params(std::string("SELECT ") + kProfileColumns + ", " + kConnectionCount +
-                                           " FROM profiles p WHERE p.user_id = $1",
-                                       user_id);
+    static const std::string sql =
+        std::string("SELECT ") + kProfileColumns + ", " + kConnectionCount + " FROM profiles p WHERE p.user_id = $1";
+    const auto result = sg::common::exec_cached(tx, sql, user_id);
     if (result.empty()) {
       return std::nullopt;
     }
@@ -137,22 +128,49 @@ std::optional<domain::ProfileWithCount> PostgresGraphRepository::find_profile(st
 }
 
 domain::UserPage PostgresGraphRepository::list_profiles(const domain::UserQuery& query) {
-  return pool_.with_transaction([&](pqxx::work& tx) {
-    repeatable_read(tx);
+  // One statement per filter combination, naming only the filters given (rather than
+  // "$1 IS NULL OR ..."), so the planner, and a cached generic plan, see the real predicate. The
+  // count and the page are one statement, so both see one snapshot without a transaction.
+  pqxx::params params;
+  const auto next = [&params] { return "$" + std::to_string(params.size()); };
+  std::string where = " WHERE true";
+  if (const auto pattern = substring_pattern(query.q)) {
+    // Lower-cased in SQL so the trigram indexes on handle_lower and name_lower apply.
+    params.append(*pattern);
+    const auto p = next();
+    where += " AND (p.handle_lower LIKE lower(" + p + "::text) OR p.name_lower LIKE lower(" + p + "::text))";
+  }
+  if (query.category) {
+    params.append(*query.category);
+    where += " AND p.category = " + next() + "::text";
+  }
+  if (query.branch) {
+    params.append(*query.branch);
+    where += " AND p.branch = " + next() + "::text";
+  }
+  if (query.min_reputation) {
+    params.append(*query.min_reputation);
+    where += " AND p.reputation >= " + next() + "::bigint";
+  }
+  params.append(query.limit);
+  const auto limit = next();
+  params.append(query.offset);
+  const auto offset = next();
+  const std::string sql = std::string("SELECT page.*, t.total FROM (SELECT count(*) AS total FROM profiles p") +
+                          where + ") t LEFT JOIN LATERAL (SELECT " + kProfileColumns + ", " + kConnectionCount +
+                          " FROM profiles p" + where + order_by(query.sort) + " LIMIT " + limit + " OFFSET " + offset +
+                          ") page ON true";
+  return pool_.with_read([&](pqxx::nontransaction& tx) {
     domain::UserPage page;
     page.limit = query.limit;
     page.offset = query.offset;
-    const auto pattern = substring_pattern(query.q);
-    page.total = tx.exec_params1(std::string("SELECT count(*) FROM profiles p") + kProfileFilters, pattern,
-                                 query.category, query.branch, query.min_reputation)[0]
-                     .as<std::int64_t>();
-    const auto rows = tx.exec_params(std::string("SELECT ") + kProfileColumns + ", " + kConnectionCount +
-                                         " FROM profiles p" + kProfileFilters + order_by(query.sort) +
-                                         " LIMIT $5 OFFSET $6",
-                                     pattern, query.category, query.branch, query.min_reputation, query.limit,
-                                     query.offset);
+    const auto rows = sg::common::exec_cached(tx, sql, params);
     page.items.reserve(rows.size());
     for (const auto& row : rows) {
+      page.total = row[kProfileColumnCount + 1].as<std::int64_t>();
+      if (row[0].is_null()) {
+        break;  // no matches on this page: only the total
+      }
       page.items.push_back({read_profile(row), row[kProfileColumnCount].as<std::int64_t>()});
     }
     return page;
@@ -160,21 +178,24 @@ domain::UserPage PostgresGraphRepository::list_profiles(const domain::UserQuery&
 }
 
 domain::ConnectionList PostgresGraphRepository::list_connections(std::int64_t user_id) {
-  return pool_.with_transaction([&](pqxx::work& tx) {
-    repeatable_read(tx);
+  // The list and the graph version it reflects in one statement (one snapshot, no transaction).
+  static const std::string sql =
+      std::string("SELECT c.*, v.version FROM graph_meta v LEFT JOIN LATERAL (SELECT ") + kProfileColumns +
+      ", c.strength::float8, c.interactions, c.origin, extract(epoch FROM c.created_at)::bigint,"
+      " extract(epoch FROM c.first_interaction_at)::bigint, extract(epoch FROM c.last_interaction_at)::bigint"
+      " FROM connections c"
+      " JOIN profiles p ON p.user_id = CASE WHEN c.user_a = $1 THEN c.user_b ELSE c.user_a END"
+      " WHERE c.user_a = $1 OR c.user_b = $1"
+      " ORDER BY c.strength DESC, p.user_id) c ON true WHERE v.id";
+  return pool_.with_read([&](pqxx::nontransaction& tx) {
     domain::ConnectionList list;
-    list.graph_version = tx.query_value<std::int64_t>("SELECT version FROM graph_meta WHERE id");
-    const auto rows = tx.exec_params(
-        std::string("SELECT ") + kProfileColumns +
-            ", c.strength::float8, c.interactions, c.origin, extract(epoch FROM c.created_at)::bigint,"
-            " extract(epoch FROM c.first_interaction_at)::bigint, extract(epoch FROM c.last_interaction_at)::bigint"
-            " FROM connections c"
-            " JOIN profiles p ON p.user_id = CASE WHEN c.user_a = $1 THEN c.user_b ELSE c.user_a END"
-            " WHERE c.user_a = $1 OR c.user_b = $1"
-            " ORDER BY c.strength DESC, p.user_id",
-        user_id);
+    const auto rows = sg::common::exec_cached(tx, sql, user_id);
     list.items.reserve(rows.size());
     for (const auto& row : rows) {
+      list.graph_version = row[kProfileColumnCount + 6].as<std::int64_t>();
+      if (row[0].is_null()) {
+        break;  // no connections: only the version
+      }
       domain::ConnectionItem item;
       item.user = read_profile(row);
       item.strength = sg::common::round3(row[kProfileColumnCount].as<double>());
@@ -368,9 +389,9 @@ domain::AddedConnection PostgresGraphRepository::add_connection(std::int64_t use
   std::optional<domain::UserProfile> other;
   bool caller_exists = false;
   pool_.with_read([&](pqxx::nontransaction& tx) {
-    for (const auto& row : tx.exec_params(std::string("SELECT ") + kProfileColumns +
-                                               " FROM profiles p WHERE p.user_id = $1 OR p.user_id = $2",
-                                           user_id, other_id)) {
+    static const std::string sql =
+        std::string("SELECT ") + kProfileColumns + " FROM profiles p WHERE p.user_id = $1 OR p.user_id = $2";
+    for (const auto& row : sg::common::exec_cached(tx, sql, user_id, other_id)) {
       auto profile = read_profile(row);
       if (profile.id == user_id) {
         caller_exists = true;

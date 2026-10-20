@@ -26,6 +26,16 @@
 
 namespace sg::common {
 
+namespace detail {
+/// Deletes a pooled connection after forgetting its prepared statements (see exec_cached()).
+struct PooledConnectionDeleter {
+  void operator()(pqxx::connection* conn) const noexcept;
+};
+/// Name of `sql` prepared on `conn`, preparing it on first use; nullptr when `conn` is not a
+/// PgPool connection or already holds too many statements (the caller then runs it unprepared).
+const std::string* prepared_name(pqxx::connection& conn, const std::string& sql);
+}  // namespace detail
+
 struct PgPoolOptions {
   std::string conninfo;  ///< libpq URI or key=value string
   std::size_t size = 8;  ///< maximum number of open connections
@@ -65,11 +75,12 @@ class PgPool {
 
    private:
     friend class PgPool;
-    Lease(PgPool* pool, std::unique_ptr<pqxx::connection> conn) noexcept;
+    using Connection = std::unique_ptr<pqxx::connection, detail::PooledConnectionDeleter>;
+    Lease(PgPool* pool, Connection conn) noexcept;
     void release() noexcept;
 
     PgPool* pool_ = nullptr;
-    std::unique_ptr<pqxx::connection> conn_;
+    Connection conn_;
     bool discard_ = false;
   };
 
@@ -107,13 +118,13 @@ class PgPool {
   [[nodiscard]] const PgPoolOptions& options() const noexcept { return options_; }
 
  private:
-  void give_back(std::unique_ptr<pqxx::connection> conn, bool discard) noexcept;
+  void give_back(Lease::Connection conn, bool discard) noexcept;
 
   PgPoolOptions options_;
   std::string conninfo_;  // options_.conninfo with connect_timeout applied
   mutable std::mutex mutex_;
   std::condition_variable available_;
-  std::vector<std::unique_ptr<pqxx::connection>> idle_;
+  std::vector<Lease::Connection> idle_;
   std::size_t in_use_ = 0;
   std::uint64_t acquisitions_ = 0;
   std::uint64_t timeouts_ = 0;
@@ -172,6 +183,29 @@ auto PgPool::with_read(F&& f) {
       throw;
     }
   }
+}
+
+/// Runs `sql` with `args` as a prepared statement of the transaction's connection: PostgreSQL
+/// parses and plans it once per pooled connection (and may then reuse a generic plan) instead of
+/// on every call, which is most of the server-side cost of short OLTP queries. `sql` must be a
+/// fixed text or one of a small set of variants (at most 256 per connection; more run unprepared).
+/// On a connection not owned by a PgPool it simply runs exec_params().
+template <class Tx, class... Args>
+pqxx::result exec_cached(Tx& tx, const std::string& sql, Args&&... args) {
+  if (const std::string* name = detail::prepared_name(tx.conn(), sql)) {
+    return tx.exec_prepared(*name, std::forward<Args>(args)...);
+  }
+  return tx.exec_params(sql, std::forward<Args>(args)...);
+}
+
+/// exec_cached() expecting exactly one row. @throws pqxx::unexpected_rows otherwise.
+template <class Tx, class... Args>
+pqxx::row exec_cached1(Tx& tx, const std::string& sql, Args&&... args) {
+  auto result = exec_cached(tx, sql, std::forward<Args>(args)...);
+  if (result.size() != 1) {
+    throw pqxx::unexpected_rows("Expected 1 row from query, got " + std::to_string(result.size()) + ".");
+  }
+  return result[0];
 }
 
 /// Applies `migrations` (strictly increasing versions) that are not yet recorded in the
