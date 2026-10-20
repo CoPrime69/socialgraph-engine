@@ -18,10 +18,10 @@ Two tiers, configured by `ANALYTICS_MIN_REFRESH_MS` (default 1 s) and `ANALYTICS
   `centrality_computed_at` (when the global scores were last computed), and the ETag includes both.
 
 ## Alternatives
-* **Recompute everything on every change** – exact but the dominant CPU cost under writes.
-* **Incremental PageRank/betweenness algorithms** – exist, but are complex, approximate in practice,
+* **Recompute everything on every change**: exact but the dominant CPU cost under writes.
+* **Incremental PageRank/betweenness algorithms**: exist, but are complex, approximate in practice,
   and would still need periodic full recomputation to bound drift.
-* **A separate batch job** – adds a scheduler and storage for results; the in-process timer gives
+* **A separate batch job**: adds a scheduler and storage for results; the in-process timer gives
   the same effect with less machinery.
 
 ## Consequences

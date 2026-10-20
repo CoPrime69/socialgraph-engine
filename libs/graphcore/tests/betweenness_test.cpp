@@ -64,7 +64,7 @@ TEST(Betweenness, CompleteGraphIsZero) {
 }
 
 TEST(Betweenness, TwoCliquesJoinedByABridge) {
-  // K4 ∪ K4 with bridge 3–4: every one of the 3·4 pairs {0,1,2}×{4..7} passes through 3.
+  // K4 ∪ K4 with bridge 3-4: every one of the 3·4 pairs {0,1,2}×{4..7} passes through 3.
   const auto r = betweenness(testing::two_cliques_with_bridge(4), exact(1, false));
   expect_near_all(r.scores, {0, 0, 0, 12, 12, 0, 0, 0}, 1e-12);
   const auto normalized = betweenness(testing::two_cliques_with_bridge(4));
@@ -79,7 +79,7 @@ TEST(Betweenness, DisconnectedGraph) {
 
 TEST(Betweenness, CountsMultipleShortestPathsBySigma) {
   // s=0 → {1,2,3}; 1,2 → 4 (σ4 = 2); 3 → 5 (σ5 = 1); 4,5 → 6 (σ6 = 3).
-  // Node 4 carries 2/3 of the 0–6 paths, node 5 carries 1/3.
+  // Node 4 carries 2/3 of the 0-6 paths, node 5 carries 1/3.
   const CsrGraph g = testing::make_graph(7, {{0, 1}, {0, 2}, {0, 3}, {1, 4}, {2, 4}, {3, 5}, {4, 6}, {5, 6}});
   const auto r = betweenness(g, exact(1, false));
   expect_near_all(r.scores, testing::brute_force_betweenness(g, false), 1e-12);

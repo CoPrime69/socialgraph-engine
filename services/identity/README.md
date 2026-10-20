@@ -6,10 +6,10 @@ locally with the public key.
 
 | Route | Auth | Response |
 |-------|------|----------|
-| `POST /api/v1/auth/register` | – | `201 { token, expires_at, user: { id, handle, name } }` |
-| `POST /api/v1/auth/login` | – | `200` same body; `401 invalid_credentials` on failure |
+| `POST /api/v1/auth/register` | none | `201 { token, expires_at, user: { id, handle, name } }` |
+| `POST /api/v1/auth/login` | none | `200` same body; `401 invalid_credentials` on failure |
 | `GET /api/v1/auth/me` | Bearer | `{ id, handle, name, created_at }` |
-| `GET /healthz`, `GET /readyz` | – | liveness; readiness = PostgreSQL reachable |
+| `GET /healthz`, `GET /readyz` | none | liveness; readiness = PostgreSQL reachable |
 
 Register body: `{ handle, name, password, category, branch }` plus optional `location` (≤ 100
 characters) and `about` (≤ 500 characters, line breaks allowed); `influence` is ignored. All
@@ -58,15 +58,15 @@ graph-service seeds the matching profile itself. An empty database with seeding 
 | Variable | Default | |
 |----------|---------|---|
 | `IDENTITY_PORT` | `8081` | |
-| `IDENTITY_DATABASE_URL` | – | required for `serve`, `migrate`, `seed` |
-| `AUTH_SIGNING_SEED` | – | base64 32-byte Ed25519 seed (secret), required for `serve` |
-| `AUTH_TOKEN_TTL_SECONDS` | `28800` | 60 s – 30 days |
+| `IDENTITY_DATABASE_URL` | none | required for `serve`, `migrate`, `seed` |
+| `AUTH_SIGNING_SEED` | none | base64 32-byte Ed25519 seed (secret), required for `serve` |
+| `AUTH_TOKEN_TTL_SECONDS` | `28800` | 60 s to 30 days |
 | `PASSWORD_HASH_PROFILE` | `owasp` | `owasp` or `fast` (tests) |
 | `REDIS_HOST` / `REDIS_PORT` | `127.0.0.1` / `6379` | |
 | `GRAPH_SERVICE_URL` | `http://localhost:8082` | taxonomy source |
 | `TAXONOMY_REFRESH_SECONDS` | `300` | |
 | `SEED_ON_EMPTY` | `true` | seed the demo account into an empty database |
-| `SEED_DEMO_PASSWORD` | – | 8–128 bytes (secret) |
+| `SEED_DEMO_PASSWORD` | none | 8-128 bytes (secret) |
 | `HTTP_THREADS` | `0` | HTTP event-loop threads; `0` = one per CPU core |
 | `HTTP_WORKER_THREADS` | `32` | threads running request handlers (they wait on PostgreSQL) |
 | `DB_POOL_SIZE` | `8` | |

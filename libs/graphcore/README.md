@@ -17,7 +17,7 @@ graph-service and analytics-service link the static library `sg_graphcore` (alia
 | `community.hpp` | `louvain`, `modularity` |
 | `components.hpp` | `connected_components` |
 | `paths.hpp` | `shortest_path` (bidirectional BFS), `bfs_distances` |
-| `recommend.hpp` | `recommend`: Adamic–Adar + affinity + same-community score |
+| `recommend.hpp` | `recommend`: Adamic-Adar + affinity + same-community score |
 | `generator.hpp` | `SplitMix64` (portable PRNG, Lemire bounded draws), `generate_homophilous_edges` |
 | `parallel.hpp` | `parallel_for(begin, end, threads, body(i, worker))`, `resolve_thread_count` |
 | `graphcore.hpp` | umbrella header |
@@ -34,14 +34,14 @@ V = nodes, E = undirected edges, k = sources or iterations, t = threads.
 | `CsrGraph::from_edges` | counting sort by source, per-list sort only when unsorted, keep first duplicate | O(V + E log d_max), O(V + E) for sorted input | O(V + E) |
 | `pagerank` | power iteration, uniform dangling mass, stop when L1 change ≤ tolerance | O(k (V + E)) | O(V) |
 | `betweenness` | Brandes 2001; predecessors recognised by `dist[v] == dist[w] − 1` (no lists); fixed source blocks merged in block order, so results are bit-identical for any thread count; optional pivot sampling scaled by n/k | O(k (V + E)), exact O(V E) | O(t V) + block buffers |
-| `closeness` | bit-parallel BFS, 64 sources per sweep, bit-sliced distance counters; Wasserman–Faust for disconnected graphs | O(⌈V/64⌉ L (V + E)), L ≤ diameter + 1 | O(t V) |
+| `closeness` | bit-parallel BFS, 64 sources per sweep, bit-sliced distance counters; Wasserman-Faust for disconnected graphs | O(⌈V/64⌉ L (V + E)), L ≤ diameter + 1 | O(t V) |
 | `degree_centrality` | deg/(n − 1) | O(V) | O(V) |
 | `louvain` | local moving in ascending id order (strict gain), aggregation; final modularity recomputed on the input graph | O(p (V + E)) per level | O(V + E) |
-| `modularity` | Newman–Girvan with resolution γ | O(V + E) | O(V) |
+| `modularity` | Newman-Girvan with resolution γ | O(V + E) | O(V) |
 | `connected_components` | BFS | O(V + E) | O(V) |
 | `shortest_path` | bidirectional BFS, smaller frontier first, per-thread stamped scratch | O(b^(d/2)) typical, O(V + E) worst | O(V) per thread, reused |
 | `bfs_distances` | BFS | O(V + E) | O(V) |
-| `recommend` | Adamic–Adar over the 2-hop neighbourhood + affinity + community, bounded top-k heap, per-thread scratch reset in O(touched) | O(V log limit + Σ_{z ∈ N(u)} deg z) | O(V) per thread, reused |
+| `recommend` | Adamic-Adar over the 2-hop neighbourhood + affinity + community, bounded top-k heap, per-thread scratch reset in O(touched) | O(V log limit + Σ_{z ∈ N(u)} deg z) | O(V) per thread, reused |
 | `generate_homophilous_edges` | SplitMix64 draws inside/outside the group, sorted and deduplicated | O(V d log(V d)) | O(V d) |
 
 Conventions worth knowing:

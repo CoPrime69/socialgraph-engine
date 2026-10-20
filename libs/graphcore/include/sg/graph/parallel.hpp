@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file parallel.hpp
-/// Minimal fork–join loop used by the parallel algorithms (no global thread pool).
+/// Minimal fork-join loop used by the parallel algorithms (no global thread pool).
 
 #include <algorithm>
 #include <atomic>

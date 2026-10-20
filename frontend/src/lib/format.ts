@@ -68,7 +68,7 @@ const ORDINAL_SUFFIX: Partial<Record<Intl.LDMLPluralRule, string>> = {
 };
 
 /**
- * Reputation percentile (the profile's `influence`, 0–100) → "97th percentile".
+ * Reputation percentile (the profile's `influence`, 0-100) → "97th percentile".
  * Above 99 two decimals are kept, because that is where the most active users differ.
  */
 export function formatPercentile(influence: number): string {

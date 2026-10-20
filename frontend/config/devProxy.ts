@@ -49,12 +49,12 @@ function userSubresource(suffix: string): string {
 /** Ordered routing table: first match wins (same semantics as Vite's proxy middleware). */
 export const API_ROUTES: readonly { pattern: string; service: ServiceName }[] = [
   { pattern: prefix('/api/v1/auth'), service: 'identity' },
-  // analytics-service — before the generic /api/v1/users route.
+  // analytics-service: before the generic /api/v1/users route.
   { pattern: userSubresource('metrics'), service: 'analytics' },
   { pattern: prefix('/api/v1/analytics'), service: 'analytics' },
   { pattern: prefix('/api/v1/paths'), service: 'analytics' },
   { pattern: prefix('/api/v1/me/recommendations'), service: 'analytics' },
-  // content-service (§10.6) — also before the generic /api/v1/users route.
+  // content-service (§10.6): also before the generic /api/v1/users route.
   { pattern: userSubresource('activity'), service: 'content' },
   { pattern: prefix('/api/v1/tags'), service: 'content' },
   { pattern: prefix('/api/v1/questions'), service: 'content' },

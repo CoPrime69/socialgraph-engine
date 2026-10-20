@@ -11,8 +11,8 @@ that turns the error envelope into a typed `ApiError`; d3-force simulation rende
 the network graph; Vitest + Testing Library + MSW for component tests; Playwright for end-to-end tests.
 
 ## Alternatives
-* **Redux / Zustand for server data** – duplicates what a server-state cache does.
-* **Cytoscape.js / Sigma.js** – capable graph libraries; d3-force + canvas keeps the bundle smaller and
+* **Redux / Zustand for server data**: duplicates what a server-state cache does.
+* **Cytoscape.js / Sigma.js**: capable graph libraries; d3-force + canvas keeps the bundle smaller and
   gives full control over styling and interaction for a few thousand nodes.
 
 ## Consequences

@@ -105,7 +105,7 @@ class BrandesWorker {
   std::vector<NodeId> order_;
 };
 
-/// k distinct pivots of [0, n) by a partial Fisher–Yates shuffle, returned sorted.
+/// k distinct pivots of [0, n) by a partial Fisher-Yates shuffle, returned sorted.
 std::vector<NodeId> sample_pivots(std::size_t n, std::size_t k, std::uint64_t seed) {
   std::vector<NodeId> permutation(n);
   std::iota(permutation.begin(), permutation.end(), NodeId{0});

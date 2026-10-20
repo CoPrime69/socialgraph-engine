@@ -20,9 +20,9 @@ Above 5,000 nodes betweenness switches to deterministic pivot sampling (configur
 for their write to be reflected.
 
 ## Alternatives
-* **Cache results in Redis** – adds serialisation and staleness bookkeeping without saving computation;
+* **Cache results in Redis**: adds serialisation and staleness bookkeeping without saving computation;
   each replica would still need the graph for recommendations and paths.
-* **Incremental algorithms** – dynamic betweenness/PageRank are complex and error-prone; full
+* **Incremental algorithms**: dynamic betweenness/PageRank are complex and error-prone; full
   recomputation is a few milliseconds at the seed size and is measured in `docs/performance.md`.
 
 ## Consequences

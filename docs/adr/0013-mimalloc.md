@@ -23,9 +23,9 @@ Same build, fresh stack, two 25 s runs of the mixed workload after a warm-up run
 | mimalloc 2.1 | 6,429 req/s |
 
 ## Alternatives
-* **jemalloc** – mature, good introspection; measured slower than mimalloc here.
-* **tcmalloc** – not packaged for this toolchain without building gperftools or Abseil.
-* **Custom arenas per request** – would need allocator-aware JSON and string types through the
+* **jemalloc**: mature, good introspection; measured slower than mimalloc here.
+* **tcmalloc**: not packaged for this toolchain without building gperftools or Abseil.
+* **Custom arenas per request**: would need allocator-aware JSON and string types through the
   whole stack.
 
 ## Consequences

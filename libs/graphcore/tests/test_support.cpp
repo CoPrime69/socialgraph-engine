@@ -73,7 +73,7 @@ CsrGraph ring_of_cliques(std::size_t cliques, std::size_t s) {
         edges.emplace_back(static_cast<NodeId>(base + i), static_cast<NodeId>(base + j));
       }
     }
-    // last member of clique c — first member of clique c+1
+    // last member of clique c joins the first member of clique c+1
     const std::size_t next_base = ((c + 1) % cliques) * s;
     edges.emplace_back(static_cast<NodeId>(base + s - 1), static_cast<NodeId>(next_base));
   }

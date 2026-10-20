@@ -222,7 +222,7 @@ function report(parts, seconds) {
 
 function markdown(r) {
   const lines = [
-    `## ${r.label} — ${r.at}`,
+    `## ${r.label}: ${r.at}`,
     '',
     `${r.config.processes}×${r.config.connections_per_process} connections, ${r.config.members} members, ${r.config.duration_s}s (+${r.config.warmup_s}s warm-up), rate ${r.config.rate}, ${r.machine.cpus} CPUs (${r.machine.model})`,
     '',

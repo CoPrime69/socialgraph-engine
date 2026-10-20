@@ -26,7 +26,7 @@ void validate(const RecommendOptions& opts) {
   }
 }
 
-/// Per-thread scratch: the Adamic–Adar sums and common-neighbour counts of one query. Every entry
+/// Per-thread scratch: the Adamic-Adar sums and common-neighbour counts of one query. Every entry
 /// is zero between queries; a query records the nodes it touches and resets only those, so the
 /// structural part costs O(Σ deg z) instead of allocating and clearing O(V) memory per call.
 struct RecommendScratch {
@@ -95,7 +95,7 @@ std::vector<Recommendation> recommend(const CsrGraph& g, std::span<const Profile
     return {};
   }
 
-  // Adamic–Adar over friends of friends: Σ_{z ∈ N(u) ∩ N(v)} 1 / ln deg(z).
+  // Adamic-Adar over friends of friends: Σ_{z ∈ N(u) ∩ N(v)} 1 / ln deg(z).
   const std::size_t* offsets = g.offsets().data();
   const NodeId* adjacency = g.adjacency().data();
   const std::span<const NodeId> user_neighbors = g.neighbors(user);

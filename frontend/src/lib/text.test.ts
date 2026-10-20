@@ -17,7 +17,7 @@ describe('initials', () => {
     expect(initials('bobince')).toBe('B');
     expect(initials('  émile   zola ')).toBe('ÉZ');
     expect(initials('!!!')).toBe('?');
-    expect(initials('', '–')).toBe('–');
+    expect(initials('', '-')).toBe('-');
   });
 });
 

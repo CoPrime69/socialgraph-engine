@@ -297,7 +297,7 @@ build:
 | Every page: entry, React + Router, TanStack Query, API, styles  | ≈ 104.5 kB          |
 | Sign in / Register                                              | + 6.2 / 7.8 kB      |
 | People / Topics / Question                                      | + 9.9 / 11 / 7.9 kB |
-| A page with a graph (Overview, My network, Communities, Person) | + 41.6–46.8 kB¹     |
+| A page with a graph (Overview, My network, Communities, Person) | + 41.6-46.8 kB¹     |
 | Layout worker, started with the first graph                     | ≈ 6.5 kB            |
 
 ¹ About 31 kB of it (the graph card and d3) is shared by these pages and downloaded once.

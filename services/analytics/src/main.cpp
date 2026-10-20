@@ -17,7 +17,7 @@
 
 namespace {
 
-constexpr std::string_view kUsage = R"(analytics-service — read model and graph analytics (contracts §6)
+constexpr std::string_view kUsage = R"(analytics-service: read model and graph analytics (contracts §6)
 
 Usage: analytics-service [serve|healthcheck|--help]
 

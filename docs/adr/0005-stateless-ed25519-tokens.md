@@ -13,9 +13,9 @@ handles do equivalent work to avoid user enumeration. Login/registration are rat
 gateway (per IP) and in identity (per IP and per handle).
 
 ## Alternatives
-* **Opaque session tokens in a shared store** – revocable instantly, but every service would need the
+* **Opaque session tokens in a shared store**: revocable instantly, but every service would need the
   store, coupling them to identity's data.
-* **HS256 (shared secret)** – any service holding the secret could mint tokens; asymmetric keys keep
+* **HS256 (shared secret)**: any service holding the secret could mint tokens; asymmetric keys keep
   minting power in one place.
 
 ## Consequences

@@ -58,7 +58,7 @@ struct BetweennessResult {
 /// node, so a star centre scores 1. Graphs with n ≤ 2 score 0 everywhere.
 ///
 /// Sampling: when 0 < sample_sources < n, k distinct pivots are drawn with SplitMix64(seed)
-/// (partial Fisher–Yates) and the accumulated dependencies are scaled by n/k (unbiased
+/// (partial Fisher-Yates) and the accumulated dependencies are scaled by n/k (unbiased
 /// estimator; Brandes & Pich 2007). Otherwise the result is exact and `sources_used` = n.
 ///
 /// Determinism: sources are cut into fixed blocks whose size depends only on the number of
@@ -76,7 +76,7 @@ struct BetweennessResult {
 /// plus O(b·V) for the in-flight block buffers.
 [[nodiscard]] BetweennessResult betweenness(const CsrGraph& g, const BetweennessOptions& opts = {});
 
-/// Closeness centrality with the Wasserman–Faust correction for disconnected graphs:
+/// Closeness centrality with the Wasserman-Faust correction for disconnected graphs:
 /// C(u) = (r / D) · (r / (n − 1)), where r is the number of nodes reachable from u (excluding u)
 /// and D the sum of their BFS distances. Equals (n − 1)/D on connected graphs; isolated nodes and
 /// graphs with n ≤ 1 score 0. Never infinite.

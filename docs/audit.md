@@ -1,4 +1,4 @@
-# Phase 1 — Audit of the original system
+# Phase 1: Audit of the original system
 
 This is the audit performed before any code was changed. The original sources are kept,
 unmodified, under [`legacy/`](../legacy) so every finding below can be checked against them.
@@ -28,7 +28,7 @@ Concretely, the original program offered:
 | F10 | Persist users and connection weights to CSV | `user_data.csv`, `adjacency_matrix.csv` |
 
 Dataset: 100 seed users across 5 categories (Engineering, Finance, HR, Marketing, Sales) and
-6 branches, each with an `influence` score in 0–100, plus two users added by manual testing.
+6 branches, each with an `influence` score in 0-100, plus two users added by manual testing.
 
 ## 2. Stack and structure
 
@@ -52,7 +52,7 @@ The legacy program was compiled with `g++ -O2` on Linux and driven through stdin
   connections" uses `adjacency_matrix.csv` (random weights ≥ 13). The influencer ranking and the
   user's visible connections therefore describe different graphs.
 * **The recommendation filter is a no-op.** `printRecommendedConnections` keeps a pair when
-  *either* side matches the user's category/branch — but the first side *is* the user, so every
+  *either* side matches the user's category/branch, but the first side *is* the user, so every
   pair passes. `user1` (Engineering / software) is recommended Sales and Finance users.
 * Graph visualisation needs the external `dot` binary and fails without it.
 
@@ -71,7 +71,7 @@ Correctness
    has no quality measure, and is recomputed on every add/remove.
 4. **Recommendation scoring has dead and degenerate terms.** Candidates from the same community
    are excluded and then given a +0.3 "same community" bonus that can never apply; the user's
-   *name* is part of the Jaccard set; influence similarity is `1 - min(|Δ|, 1)` on a 0–100 scale,
+   *name* is part of the Jaccard set; influence similarity is `1 - min(|Δ|, 1)` on a 0-100 scale,
    i.e. zero unless influences differ by < 1; seed users are only recommended to people whose
    matrix weight is exactly 0, which almost never happens.
 5. **Inconsistent thresholds.** A connection "exists" at weight ≥ 13; the message says ≥ 15; the
@@ -104,7 +104,7 @@ Resource management and performance
 | Domain (users with category, branch, influence; undirected connections) | **Preserve** | It is the problem statement. |
 | Seed dataset (100 users) | **Preserve** (passwords removed) | Same demo network; plaintext passwords cannot be kept. |
 | Influencers via PageRank, betweenness, closeness | **Preserve, re-implement correctly** | Fix closeness, duplicates, races; add normalisation and tests against brute force. |
-| Recommendations by category/branch/influence | **Preserve intent, redesign scoring** | Combine the original attribute affinity with friends-of-friends structure (Adamic–Adar); explain every score. |
+| Recommendations by category/branch/influence | **Preserve intent, redesign scoring** | Combine the original attribute affinity with friends-of-friends structure (Adamic-Adar); explain every score. |
 | Connection strength (F7) | **Preserve, make deterministic** | Derived from attribute affinity instead of random noise. |
 | Community detection | **Redesign** | Replace random chunking with Louvain modularity optimisation (deterministic, measurable). |
 | Shortest path (F9) | **Expose** | Already implemented but unreachable; becomes "degrees of separation". |

@@ -1,4 +1,4 @@
-## httplib-graph-cache — 2026-10-19T22:47:40.950Z
+## httplib-graph-cache (2026-10-19T22:47:40.950Z)
 
 2×64 connections, 200 members, 30s (+5s warm-up), rate max, 4 CPUs (Intel(R) Xeon(R) Processor @ 2.80GHz)
 

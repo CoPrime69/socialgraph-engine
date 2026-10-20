@@ -23,11 +23,11 @@ flush; a probe with 64 concurrent writers reached 216 writes/s with a p99 of 1,1
   contains a statement that can fail on its own.
 
 ## Alternatives
-* **Per-request transactions with `synchronous_commit = off`** – faster, but an acknowledged write
+* **Per-request transactions with `synchronous_commit = off`**: faster, but an acknowledged write
   can be lost on a crash, and the version row still serialises writers.
-* **Sequence instead of a version row** – sequences are not transactional, so versions would have
+* **Sequence instead of a version row**: sequences are not transactional, so versions would have
   gaps on rollback and consumers could not detect lost events from gaps.
-* **Sharding the version per member** – consumers rely on one global, ordered version to know a
+* **Sharding the version per member**: consumers rely on one global, ordered version to know a
   snapshot is complete; per-member versions would need a different event protocol.
 
 ## Consequences

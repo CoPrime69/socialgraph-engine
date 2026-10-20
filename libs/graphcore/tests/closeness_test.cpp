@@ -35,7 +35,7 @@ TEST(Closeness, StarAndCompleteGraph) {
 }
 
 TEST(Closeness, TwoCliquesWithBridge) {
-  // K4 ∪ K4 + bridge 3–4. Node 0: 3·1 (own clique) + 1·2 (node 4) + 3·3 = 14 → 7/14.
+  // K4 ∪ K4 + bridge 3-4. Node 0: 3·1 (own clique) + 1·2 (node 4) + 3·3 = 14 → 7/14.
   // Node 3: 3·1 + 1 (node 4) + 3·2 = 10 → 7/10.
   const auto c = closeness(testing::two_cliques_with_bridge(4));
   EXPECT_NEAR(c[0], 0.5, 1e-15);

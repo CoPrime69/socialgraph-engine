@@ -1,5 +1,5 @@
 /**
- * TypeScript mirror of the HTTP contract in docs/contracts.md (§3–§6, superseded where
+ * TypeScript mirror of the HTTP contract in docs/contracts.md (§3-§6, superseded where
  * applicable by §10 "contract v2", the Stack Overflow 2008 dataset).
  * Field names are kept in snake_case exactly as they travel on the wire.
  */
@@ -80,7 +80,7 @@ export interface UserProfile {
   name: string;
   category: Category;
   branch: Branch;
-  /** Reputation percentile, 0–100 (2 dp). */
+  /** Reputation percentile, 0-100 (2 dp). */
   influence: number;
   reputation: number;
   location: string | null;
