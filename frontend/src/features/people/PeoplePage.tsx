@@ -195,19 +195,17 @@ export function PeoplePage() {
             ))}
           </tbody>
         </table>
-        <div className={styles.pagination}>
-          <Pagination
-            page={page}
-            pageSize={PEOPLE_PAGE_SIZE}
-            total={data.total}
-            noun="people"
-            disabled={people.isPlaceholderData}
-            onPageChange={(next) => {
-              update({ page: next > 1 ? String(next) : null }, false);
-              resultsRef.current?.scrollIntoView({ block: 'start' });
-            }}
-          />
-        </div>
+        <Pagination
+          page={page}
+          pageSize={PEOPLE_PAGE_SIZE}
+          total={data.total}
+          noun="people"
+          disabled={people.isPlaceholderData}
+          onPageChange={(next) => {
+            update({ page: next > 1 ? String(next) : null }, false);
+            resultsRef.current?.scrollIntoView({ block: 'start' });
+          }}
+        />
       </>
     );
   }

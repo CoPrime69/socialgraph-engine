@@ -13,8 +13,9 @@
   display: flex;
   align-items: stretch;
   gap: var(--space-8);
-  padding: 0 var(--space-6);
-  background: var(--color-page);
+  /* Header content lines up with the centred page content. */
+  padding: 0 max(var(--space-6), calc((100% - var(--content-max)) / 2 + var(--space-6)));
+  background: var(--color-surface-raised);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -33,8 +34,8 @@
 
 .brandName {
   font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-display);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-heading);
 }
 
 .account {
@@ -92,7 +93,7 @@
 .navList {
   display: flex;
   align-items: stretch;
-  gap: var(--space-6);
+  gap: var(--space-1);
   margin: 0;
 }
 
@@ -104,15 +105,33 @@
   position: relative;
   display: flex;
   align-items: center;
+  padding: 0 var(--space-3);
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-small);
   text-decoration: none;
   white-space: nowrap;
 }
 
+/* Hover shows a soft pill behind the label, as in the Vercel navigation. */
+.navLink::before {
+  content: '';
+  position: absolute;
+  inset: 50% var(--space-1) auto;
+  height: 2rem;
+  transform: translateY(-50%);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+  z-index: -1;
+}
+
 .navLink:hover {
   color: var(--color-text);
+}
+
+.navLink:hover::before {
+  background: var(--color-surface-sunken);
 }
 
 .navIcon {
@@ -123,13 +142,12 @@
 .active,
 .active:hover {
   color: var(--color-text);
-  font-weight: var(--weight-semibold);
 }
 
 .active::after {
   content: '';
   position: absolute;
-  inset: auto 0 -1px;
+  inset: auto var(--space-3) -1px;
   height: 2px;
   background: var(--color-rule-heavy);
 }
@@ -145,11 +163,15 @@
 
 .content {
   max-width: var(--content-max);
+  margin-inline: auto;
   padding: var(--space-10) var(--space-6) var(--space-12);
 }
 
 @media (min-width: 90rem) {
-  .header,
+  .header {
+    padding-inline: max(var(--space-10), calc((100% - var(--content-max)) / 2 + var(--space-10)));
+  }
+
   .content {
     padding-inline: var(--space-10);
   }
@@ -185,12 +207,17 @@
     justify-content: center;
     gap: 2px;
     padding: 0 2px;
+    letter-spacing: 0;
     font-size: 0.6875rem;
     text-align: center;
   }
 
   .navIcon {
     display: block;
+  }
+
+  .navLink::before {
+    display: none;
   }
 
   .navLink span {

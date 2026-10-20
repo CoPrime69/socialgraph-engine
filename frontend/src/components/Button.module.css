@@ -8,9 +8,9 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   line-height: 1;
-  letter-spacing: 0.005em;
+  letter-spacing: var(--tracking-small);
   text-decoration: none;
   white-space: nowrap;
   transition:
@@ -46,8 +46,9 @@
 }
 
 .secondary {
-  background: transparent;
-  border-color: var(--color-text);
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-control);
+  box-shadow: var(--shadow-sm);
   color: var(--color-text);
 }
 

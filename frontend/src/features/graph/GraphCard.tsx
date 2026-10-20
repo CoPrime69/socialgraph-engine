@@ -228,14 +228,7 @@ export function GraphCard({
       description={description}
       toolbar={toolbar}
       busy={graph.isPlaceholderData && graph.isFetching}
-      footer={
-        data ? (
-          <span>
-            Graph version {formatInteger(data.graph_version)}
-            {data.stale ? ' · updating with your latest changes…' : ''}
-          </span>
-        ) : undefined
-      }
+      footer={data?.stale ? 'Updating with your latest changes…' : undefined}
     >
       {body}
     </Card>

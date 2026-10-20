@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/schibsted-grotesk/wght.css';
+import '@fontsource-variable/geist/wght.css';
 import './styles/global.css';
 import { App } from './app/App';
 import { wireApiClient } from './app/wireApiClient';

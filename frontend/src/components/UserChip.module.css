@@ -73,8 +73,8 @@ a.chip:hover .name {
 
 .pill {
   padding: 2px var(--space-3) 2px 2px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
   background: var(--color-surface-raised);
   font-size: var(--text-sm);
 }

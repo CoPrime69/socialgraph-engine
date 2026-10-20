@@ -31,18 +31,26 @@
   gap: var(--space-4);
 }
 
-/* The list of all communities: one ruled row per community, not a grid of boxes. */
+/* The list of all communities: one panel, a hairline between rows. */
 ul.grid {
   display: block;
-  border-top: 1px solid var(--color-border-strong);
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-1);
-  padding: var(--space-5) var(--space-2);
+  padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--color-border);
+}
+
+ul.grid > li:last-child .card {
+  border-bottom: 0;
 }
 
 .highlighted {
@@ -142,4 +150,10 @@ ul.grid {
 
 .cardActions {
   margin-top: var(--space-2);
+}
+
+@media (max-width: 40rem) {
+  .card {
+    padding: var(--space-4);
+  }
 }

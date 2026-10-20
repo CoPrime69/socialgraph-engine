@@ -1,11 +1,10 @@
-/* Topic tags keep the look Stack Overflow gave them in 2008: pale blue with a darker edge. */
+/* Topic tags: soft blue pills with a hairline edge. */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  border-radius: var(--radius-sm);
-  border-right: 1px solid var(--color-tag-edge);
-  border-bottom: 1px solid var(--color-tag-edge);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-tag-edge);
   background: var(--color-tag);
   color: var(--color-tag-text);
   font-weight: var(--weight-medium);
@@ -20,13 +19,13 @@
 
 .md {
   min-height: 1.625rem;
-  padding: 1px var(--space-2);
+  padding: 1px 0.625rem;
   font-size: var(--text-sm);
 }
 
 .sm {
   min-height: 1.25rem;
-  padding: 0 0.375rem;
+  padding: 0 var(--space-2);
   font-size: var(--text-xs);
 }
 

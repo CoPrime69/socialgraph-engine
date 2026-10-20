@@ -18,7 +18,7 @@
 
 @media (min-width: 60rem) {
   .filters {
-    grid-template-columns: minmax(14rem, 2fr) repeat(4, minmax(9rem, 1fr));
+    grid-template-columns: minmax(14rem, 1.6fr) repeat(3, minmax(9rem, 1fr)) minmax(12.5rem, 1.2fr);
   }
 
   .searchField {
@@ -61,10 +61,6 @@
   font-weight: var(--weight-semibold);
 }
 
-.pagination {
-  padding: 0 var(--space-5) var(--space-4);
-}
-
 @media (max-width: 40rem) {
   .branch,
   .category,
@@ -80,9 +76,5 @@
 
   .location {
     max-width: none;
-  }
-
-  .pagination {
-    padding: 0 var(--space-4) var(--space-4);
   }
 }

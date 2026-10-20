@@ -147,7 +147,7 @@ describe('User profile', () => {
     expect(request?.query.get('focus')).toBe(String(jonSkeet.id));
     expect(request?.query.get('depth')).toBe('1');
     expect(request?.query.get('limit')).toBe('150');
-    expect(within(card).getByText('Graph version 41')).toBeInTheDocument();
+    expect(within(card).queryByText(/Graph version/)).not.toBeInTheDocument();
 
     await user.click(within(card).getByRole('radio', { name: 'Two steps away' }));
     expect(

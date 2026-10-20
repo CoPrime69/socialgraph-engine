@@ -137,7 +137,7 @@ describe('Overview', () => {
       name: /most influential of 18,649 people/,
     });
     expect(canvas).toHaveAccessibleDescription(/Drag to pan/);
-    expect(within(card).getByText('Graph version 41')).toBeInTheDocument();
+    expect(within(card).queryByText(/Graph version/)).not.toBeInTheDocument();
     expect(backend.lastRequest('/api/v1/analytics/graph')?.query.get('limit')).toBe('1500');
 
     await user.selectOptions(within(card).getByLabelText('People shown'), '500');
